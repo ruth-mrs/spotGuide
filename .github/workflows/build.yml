@@ -64,21 +64,20 @@ jobs:
     needs: build-frontend
 
     steps:
-      - name: Download artifacts
-      - uses: actions/download-artifact
-        with: 
-          name: www
-          path: ./frontend/www
+          - name: Download artifacts
+            uses: actions/download-artifact@v4
+            with: 
+              name: www
+              path: ./frontend/www
 
-      - name: Deploy to Github Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontend/www
-          publish_branch: gh-pages
-          publish_repo: ${{ github.repository }}
-          destination_dir: frontend
-          force_orphan: true
-          commit_message: "Deploy frontend to GitHub Pages"
-          user_name: "GitHub Actions"
-          
+          - name: Deploy to Github Pages
+            uses: peaceiris/actions-gh-pages@v3
+            with:
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              publish_dir: ./frontend/www
+              publish_branch: gh-pages
+              publish_repo: ${{ github.repository }}
+              destination_dir: frontend
+              force_orphan: true
+              commit_message: "Deploy frontend to GitHub Pages"
+              user_name: "GitHub Actions"
