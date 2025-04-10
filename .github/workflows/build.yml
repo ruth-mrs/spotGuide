@@ -21,6 +21,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Install Ionic CLI
+        working-directory: ./frontend
+        run: npm install -g @ionic/cli
+
       - name: Build frontend
         working-directory: ./frontend
         run: ionic build
