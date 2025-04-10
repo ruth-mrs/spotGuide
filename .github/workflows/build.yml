@@ -23,7 +23,7 @@ jobs:
 
       - name: Build frontend
         working-directory: ./frontend
-        run: npx ionic build
+        run: npm run build
 
       - name: Run tests
         working-directory: ./frontend
