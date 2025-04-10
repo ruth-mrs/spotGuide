@@ -82,3 +82,4 @@ jobs:
               publish_branch: gh-pages
               commit_message: "Deploy frontend to GitHub Pages"
               user_name: "GitHub Actions"
+              user_email: "actions@github.com"
