@@ -29,7 +29,7 @@ jobs:
 
       - name: Build frontend
         working-directory: ./frontend
-        run: ionic build --prod -- --base-href /www/
+        run: ionic build -- --base-href /www/
 
       - name: Run tests
         working-directory: ./frontend
@@ -80,6 +80,3 @@ jobs:
               github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./www
               publish_branch: gh-pages
-              commit_message: "Deploy frontend to GitHub Pages"
-              user_name: "GitHub Actions"
-              user_email: "actions@github.com"
