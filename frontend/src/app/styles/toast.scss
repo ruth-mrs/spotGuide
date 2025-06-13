@@ -1,0 +1,224 @@
+.modern-toast {
+  --background: rgba(255, 255, 255, 0.95);
+  --color: #2d3748;
+  --border-radius: 16px;
+  --box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1);
+  --min-height: 56px;
+  --width: calc(100% - 32px);
+  --max-width: 400px;
+  
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  
+  .toast-wrapper {
+    padding: 16px 20px;
+    border-radius: 16px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--toast-accent-color, #667eea);
+      border-radius: 16px 16px 0 0;
+    }
+  }
+  
+  .toast-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .toast-message {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    flex: 1;
+    margin: 0;
+  }
+  
+  .toast-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  
+  .toast-close-btn {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--color);
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: rgba(0, 0, 0, 0.15);
+    }
+  }
+  
+  // Animación de entrada
+  &.toast-entering {
+    animation: slideInTop 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  
+  // Animación de salida
+  &.toast-leaving {
+    animation: slideOutTop 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+}
+
+// Variantes de color
+.toast-success {
+  --toast-accent-color: #10b981;
+  --background: rgba(240, 253, 244, 0.95);
+  --color: #065f46;
+  
+  .toast-icon {
+    color: #10b981;
+  }
+}
+
+.toast-error {
+  --toast-accent-color: #ef4444;
+  --background: rgba(254, 242, 242, 0.95);
+  --color: #7f1d1d;
+  
+  .toast-icon {
+    color: #ef4444;
+  }
+}
+
+.toast-warning {
+  --toast-accent-color: #f59e0b;
+  --background: rgba(255, 251, 235, 0.95);
+  --color: #78350f;
+  
+  .toast-icon {
+    color: #f59e0b;
+  }
+}
+
+.toast-info {
+  --toast-accent-color: #3b82f6;
+  --background: rgba(239, 246, 255, 0.95);
+  --color: #1e3a8a;
+  
+  .toast-icon {
+    color: #3b82f6;
+  }
+}
+
+// Modo oscuro
+@media (prefers-color-scheme: dark) {
+  .modern-toast {
+    --background: rgba(31, 41, 55, 0.95);
+    --color: #f9fafb;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+  
+  .toast-success {
+    --background: rgba(6, 78, 59, 0.95);
+    --color: #a7f3d0;
+  }
+  
+  .toast-error {
+    --background: rgba(127, 29, 29, 0.95);
+    --color: #fecaca;
+  }
+  
+  .toast-warning {
+    --background: rgba(120, 53, 15, 0.95);
+    --color: #fde68a;
+  }
+  
+  .toast-info {
+    --background: rgba(30, 58, 138, 0.95);
+    --color: #dbeafe;
+  }
+}
+
+// Animaciones
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-100px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideOutTop {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100px) scale(0.95);
+  }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .modern-toast {
+    --width: calc(100% - 16px);
+    --max-width: none;
+    
+    .toast-wrapper {
+      padding: 14px 16px;
+    }
+    
+    .toast-message {
+      font-size: 13px;
+    }
+  }
+}
+
+// Ajustes para diferentes posiciones
+.modern-toast.toast-position-top {
+  margin-top: 20px;
+  
+  @media (max-width: 480px) {
+    margin-top: 10px;
+  }
+}
+
+.modern-toast.toast-position-bottom {
+  margin-bottom: 20px;
+  
+  @media (max-width: 480px) {
+    margin-bottom: 10px;
+  }
+}
+
+// Estado loading especial
+.toast-loading {
+  .toast-container::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--toast-accent-color, #667eea);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

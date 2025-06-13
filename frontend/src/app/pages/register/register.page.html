@@ -89,7 +89,7 @@
         changeText="Pulsa para cambiar imagen"
         [(ngModel)]="registerData.avatar"
         name="avatar"
-        (imageError)="showToast($event, 'warning')">
+        (imageError)="onAvatarError($event)">
       </app-avatar-upload>
 
       <app-custom-input

@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
   IonContent, IonButton, IonSpinner, 
-  AlertController, ToastController 
+  AlertController
 } from '@ionic/angular/standalone';
 
 import { CustomInputComponent } from '../../components/custom-input/custom-input.component';
 import { PasswordValidatorComponent, PasswordChecks } from '../../components/password-validator/password-validator.component';
 import { AvatarUploadComponent } from '../../components/avatar-upload/avatar-upload.component';
 import { ValidationService } from '../../services/validation.service';
+import { ToastService } from '../../services/toast.service'; // Nuevo servicio
 
 interface RegisterData {
   username: string;
@@ -73,8 +74,8 @@ export class RegisterPage implements OnInit {
   constructor(
     private router: Router,
     private alertController: AlertController,
-    private toastController: ToastController,
-    private validationService: ValidationService
+    private validationService: ValidationService,
+    private toastService: ToastService // Nuevo servicio
   ) {}
 
   ngOnInit() {
@@ -151,25 +152,34 @@ export class RegisterPage implements OnInit {
 
     if (!this.isFormValid()) {
       const missingFields = this.getMissingFields();
-      if (missingFields.length > 0) {
-        await this.showToast(`Faltan campos requeridos: ${missingFields.join(', ')}`, 'warning');
-      } else {
-        await this.showToast('Por favor corrige los errores en el formulario', 'warning');
-      }
+      await this.toastService.showValidationError(missingFields);
       return;
     }
 
     this.isLoading = true;
+    const loadingToast = await this.toastService.loading('Creando tu cuenta...');
 
     try {
       await this.simulateRegister();
-      await this.showToast('¡Registro exitoso! Bienvenido a SpotGuide', 'success');
-      this.router.navigate(['/home']);
+      await loadingToast.dismiss();
+      await this.toastService.success('¡Registro exitoso! Bienvenido a SpotGuide 🎉');
+      
+      // Pequeño delay para mostrar el éxito antes de navegar
+      setTimeout(() => {
+        this.router.navigate(['/home']);
+      }, 1500);
     } catch (error) {
+      await loadingToast.dismiss();
+      await this.toastService.error('Hubo un problema al registrarte. Inténtalo de nuevo.');
       await this.showAlert('Error', 'Hubo un problema al registrarte. Inténtalo de nuevo.');
     } finally {
       this.isLoading = false;
     }
+  }
+
+  // Método para manejar errores de avatar
+  async onAvatarError(errorMessage: string) {
+    await this.toastService.warning(errorMessage);
   }
 
   private getMissingFields(): string[] {
@@ -185,23 +195,17 @@ export class RegisterPage implements OnInit {
   }
 
   private async simulateRegister(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       setTimeout(() => {
-        console.log('Registrando usuario:', this.registerData);
-        resolve();
+        // Simular error ocasional para testing
+        if (Math.random() < 0.1) { // 10% chance de error
+          reject(new Error('Error simulado'));
+        } else {
+          console.log('Registrando usuario:', this.registerData);
+          resolve();
+        }
       }, 2000);
     });
-  }
-
-  async showToast(message: string, color: string) {
-    const toast = await this.toastController.create({
-      message,
-      duration: 3000,
-      position: 'top',
-      color,
-      cssClass: 'custom-toast'
-    });
-    await toast.present();
   }
 
   private async showAlert(header: string, message: string) {
