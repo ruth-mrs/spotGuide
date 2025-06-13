@@ -10,7 +10,6 @@ import { home, compass, add, list, person } from 'ionicons/icons';
     IonTabs,
     IonTabBar,
     IonTabButton,
-    IonLabel,
     IonIcon
   ],
   styleUrls: ['./tabs.component.scss'],
