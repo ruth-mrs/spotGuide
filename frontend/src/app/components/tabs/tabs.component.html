@@ -1,0 +1,21 @@
+@if (isLoggedIn) {
+<ion-tabs>
+  <ion-tab-bar slot="bottom">
+    <ion-tab-button tab="home" routerLink="/home">
+      <ion-icon name="home"></ion-icon>
+    </ion-tab-button>
+    <ion-tab-button tab="points" routerLink="/points">
+      <ion-icon name="compass"></ion-icon>
+    </ion-tab-button>
+    <ion-tab-button tab="add" routerLink="/add">
+      <ion-icon name="add"></ion-icon>
+    </ion-tab-button>
+    <ion-tab-button tab="routes" routerLink="/routes">
+      <ion-icon name="list"></ion-icon>
+    </ion-tab-button>
+    <ion-tab-button tab="profile" routerLink="/profile">
+      <img [src]="userAvatarUrl" alt="Avatar" class="tab-avatar" />
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>
+}

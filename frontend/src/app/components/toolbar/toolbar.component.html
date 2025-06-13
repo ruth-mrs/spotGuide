@@ -1,0 +1,17 @@
+<div class="toolbar-container">
+  @if (showBack) {
+    <ion-button fill="clear" class="back-btn" (click)="onBack()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+    </ion-button>  
+}
+  
+  @if (showSearch) {
+    <ion-searchbar
+      class="custom-searchbar"
+      [placeholder]="searchPlaceholder"
+      (ionInput)="onSearchChange($event)"
+      [style.width]="showBack ? 'calc(100% - 56px)' : '100%'"
+    ></ion-searchbar>
+  }
+  
+</div>

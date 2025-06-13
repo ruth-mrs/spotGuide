@@ -35,3 +35,10 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+body, html, .ion-page, ion-content {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  background: rgba(7, 8, 29, 1);
+}
