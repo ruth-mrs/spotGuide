@@ -1,3 +1,6 @@
 <ion-app>
   <ion-router-outlet></ion-router-outlet>
+  @if (isLoggedIn) {
+    <app-tabs></app-tabs>
+  }
 </ion-app>
