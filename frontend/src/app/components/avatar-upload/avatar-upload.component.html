@@ -1,0 +1,33 @@
+<div class="avatar-group">
+  @if (label) {
+    <label class="avatar-label">{{ label }}</label>
+  }
+  <div 
+    class="avatar-upload" 
+    [class.no-image]="!selectedImage"
+    [class.has-image]="selectedImage"
+    (click)="selectImage()">
+    
+    <!-- Cuando NO hay imagen -->
+    @if (!selectedImage) {
+      <div class="avatar-preview">
+        <ion-icon name="camera" class="camera-icon"></ion-icon>
+        <span class="upload-text">{{ uploadText }}</span>
+      </div>
+    }
+    
+    <!-- Cuando SÍ hay imagen -->
+    @if (selectedImage) {
+      <div class="avatar-image-container">
+        <img [src]="selectedImage" [alt]="altText" class="avatar-image">
+        <span class="change-avatar-text">{{ changeText }}</span>
+      </div>
+    }
+  </div>
+  <input 
+    type="file" 
+    #fileInput 
+    (change)="onFileSelected($event)" 
+    accept="image/*" 
+    hidden>
+</div>

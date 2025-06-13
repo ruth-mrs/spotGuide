@@ -1,17 +1,19 @@
 .toolbar-container {
   display: flex;
   align-items: center;
-  padding: 10px 0 0 0;
+  padding: 10px 16px 8px 16px;
   width: 100%;
-  background: transparent;
-  padding-top: var(--ion-safe-area-top, 0px);
+  background: transparent; 
+  padding-top: calc(var(--ion-safe-area-top, 0px) + 10px);
+  position: relative;
+  z-index: 1000;
 }
 
 .back-btn {
-  --background: #363e7a;
+  --background: rgba(54, 62, 122, 0.8);
   --color: #fff;
-  border-radius: 50%;
-  margin-right: 8px;
+  --border-radius: 100%;
+  margin: 8px;
   min-width: 44px;
   min-height: 44px;
   width: 44px;
@@ -19,14 +21,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  --padding-top: 5px;
+  --padding-bottom: 5px;
+  --padding-start: 0.7em;
+  --padding-end: 0.7em;
 }
 
 .custom-searchbar {
-  --background: #e6e7ee;
+  --background: rgba(47, 48, 52, 0.4);
+  --color: #fff;
+  --placeholder-color: #fff;
   --border-radius: 25px;
   --box-shadow: none;
   flex: 1 1 0%;
   min-width: 0;
   margin: 0;
   height: 44px;
+  backdrop-filter: blur(10px); 
+  -webkit-backdrop-filter: blur(10px); 
+}
+
+// Si nada de lo anterior funciona, usa esto:
+ion-searchbar.custom-searchbar {
+  --icon-color: #fff;
+  
+  .native-input {
+    color: #fff !important;
+  }
 }

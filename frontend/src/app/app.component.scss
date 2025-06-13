@@ -1,0 +1,25 @@
+ion-app {
+  position: relative;
+}
+
+app-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+ion-router-outlet {
+  position: relative;
+  z-index: 1;
+}
+
+app-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+}

@@ -1,0 +1,35 @@
+<div class="input-group">
+  @if (label) {
+    <label class="input-label">
+      {{ label }}
+      @if (optional) {
+        <span class="optional-text">(opcional)</span>
+      }
+    </label>
+  }
+  <div class="input-container" [class.password-container]="type === 'password'">
+    <ion-input
+      class="custom-input"
+      [class.error]="hasError"
+      [type]="actualType"
+      [placeholder]="placeholder"
+      [value]="value"
+      [required]="required"
+      (ionInput)="onInput($event)"
+      (ionBlur)="onBlur()">
+    </ion-input>
+    @if (type === 'password') {
+      <ion-button 
+        fill="clear" 
+        class="password-toggle"
+        (click)="togglePassword()">
+        <ion-icon [name]="showPassword ? 'eye-off' : 'eye'" slot="icon-only"></ion-icon>
+      </ion-button>
+    }
+  </div>
+  @if (hasError && errorMessage) {
+    <div class="error-message">
+      {{ errorMessage }}
+    </div>
+  }
+</div>

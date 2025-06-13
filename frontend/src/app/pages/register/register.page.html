@@ -1,13 +1,124 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>register</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="register-bg">
+  <div class="background-image"></div>
+  <div class="background-gradient"></div>
+  
+  <div class="register-container">
+    <!-- Logo y título -->
+    <div class="logo-section">
+      <div class="logo-container">
+        <img src="assets/icon/logo.png" alt="SpotGuide logo" class="logo" />
+      </div>
+      <h1 class="register-title">Registrarse</h1>
+    </div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">register</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <!-- Formulario -->
+    <form class="register-form" (ngSubmit)="onRegister()" #registerForm="ngForm">
+      
+      <app-custom-input
+        label="Usuario"
+        placeholder="Ingresa tu usuario"
+        [required]="true"
+        [hasError]="fieldErrors.username.length > 0"
+        [errorMessage]="fieldErrors.username[0]"
+        [(ngModel)]="registerData.username"
+        name="username"
+        (inputBlur)="validateField('username')">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Nombre"
+        placeholder="Ingresa tu nombre completo"
+        [required]="true"
+        [hasError]="fieldErrors.name.length > 0"
+        [errorMessage]="fieldErrors.name[0]"
+        [(ngModel)]="registerData.name"
+        name="name"
+        (inputBlur)="validateField('name')">
+      </app-custom-input>
+
+      <app-custom-input
+        label="Email"
+        placeholder="ejemplo@correo.com"
+        type="email"
+        [required]="true"
+        [hasError]="fieldErrors.email.length > 0"
+        [errorMessage]="fieldErrors.email[0]"
+        [(ngModel)]="registerData.email"
+        name="email"
+        (inputBlur)="validateField('email')">
+      </app-custom-input>
+
+      <div class="form-group">
+        <app-custom-input
+          label="Contraseña"
+          placeholder="Ingresa tu contraseña"
+          type="password"
+          [required]="true"
+          [hasError]="fieldErrors.password.length > 0"
+          [errorMessage]="fieldErrors.password[0]"
+          [(ngModel)]="registerData.password"
+          name="password"
+          (inputChange)="onPasswordChange()"
+          (inputBlur)="validateField('password')">
+        </app-custom-input>
+        
+        <app-password-validator
+          [checks]="passwordChecks"
+          [showValidator]="registerData.password.length > 0">
+        </app-password-validator>
+      </div>
+
+      <div class="form-group">
+        <app-custom-input
+          label="Confirmar Contraseña"
+          placeholder="Repite tu contraseña"
+          type="password"
+          [required]="true"
+          [hasError]="fieldErrors.confirmPassword.length > 0"
+          [errorMessage]="fieldErrors.confirmPassword[0]"
+          [(ngModel)]="registerData.confirmPassword"
+          name="confirmPassword"
+          (inputChange)="validatePasswordMatch()"
+          (inputBlur)="validateField('confirmPassword')">
+        </app-custom-input>
+      </div>
+
+      <app-avatar-upload
+        label="Avatar"
+        uploadText="Sube o hazte una foto"
+        changeText="Pulsa para cambiar imagen"
+        [(ngModel)]="registerData.avatar"
+        name="avatar"
+        (imageError)="showToast($event, 'warning')">
+      </app-avatar-upload>
+
+      <app-custom-input
+        label="Descripción"
+        placeholder="Cuéntanos sobre ti..."
+        type="textarea"
+        [optional]="true"
+        [(ngModel)]="registerData.description"
+        name="description">
+      </app-custom-input>
+
+      <ion-button 
+        expand="block" 
+        class="register-button"
+        type="submit"
+        [disabled]="!isFormValid() || isLoading">
+        @if (isLoading) {
+          <ion-spinner name="crescent" class="spinner"></ion-spinner>
+        }
+        @if (!isLoading) {
+          <span>Registrarse</span>
+        }
+      </ion-button>
+    </form>
+
+    <!-- Link de login -->
+    <div class="login-link">
+      <span class="login-text">¿Ya tienes cuenta? </span>
+      <a routerLink="/login" class="login-link-text">Inicia sesión</a>
+    </div>
+  </div>
 </ion-content>

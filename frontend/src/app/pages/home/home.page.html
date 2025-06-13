@@ -4,13 +4,6 @@
   <div class="background-image"></div>
   <div class="background-gradient"></div>
   
-  <app-toolbar
-    [showBack]="true"
-    [showSearch]="true"
-    (back)="null"
-    (searchChange)="null">
-  </app-toolbar>
-
   <div class="logo-container">
     <div class="logo-wrapper">
       <img src="assets/icon/logo.png" alt="SpotGuide logo" class="logo" />
@@ -18,24 +11,26 @@
     <h1 class="title animated-title">SpotGuide</h1>
   </div>
 
-  <div class="button-group" *ngIf="!isLoggedIn">
-    <ion-button expand="block" class="custom-button primary-btn" routerLink="/register">
-      Registrarse
-    </ion-button>
-    <ion-button expand="block" class="custom-button secondary-btn" routerLink="/login">
-      Iniciar sesión
-    </ion-button>
-    <ion-button expand="block" class="custom-button tertiary-btn">
-      Ver puntos
-    </ion-button>
-  </div>
-
-  <div class="button-group" *ngIf="isLoggedIn">
-    <ion-button expand="block" class="custom-button primary-btn">
-      Ver puntos
-    </ion-button>
-    <ion-button expand="block" class="custom-button secondary-btn">
-      Generar rutas
-    </ion-button>
-  </div>
+  @if (isLoggedIn) {
+    <div class="button-group">
+      <ion-button expand="block" class="custom-button primary-btn" (click)="navigateTo('/pois')">
+        Ver puntos
+      </ion-button>
+      <ion-button expand="block" class="custom-button secondary-btn" (click)="navigateTo('/generate-route')">
+        Generar rutas
+      </ion-button>
+    </div>
+  } @else {
+    <div class="button-group">
+      <ion-button expand="block" class="custom-button primary-btn" (click)="navigateTo('/register')">
+        Registrarse
+      </ion-button>
+      <ion-button expand="block" class="custom-button secondary-btn" (click)="navigateTo('/login')">
+        Iniciar sesión
+      </ion-button>
+      <ion-button expand="block" class="custom-button tertiary-btn" (click)="navigateTo('/pois')">
+        Ver puntos
+      </ion-button>
+    </div>
+  }
 </ion-content>

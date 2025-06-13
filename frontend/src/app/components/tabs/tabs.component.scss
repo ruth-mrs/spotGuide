@@ -10,8 +10,40 @@ ion-tab-bar {
 
 ion-tab-button {
   --color: #bfc6f7;
-  --color-selected: #fff;
+  --color-selected: #bfc6f7;
   font-family: 'Montserrat', sans-serif;
+  transition: all 0.3s ease;
+  
+  // Estado inactivo (outline)
+  ion-icon {
+    transition: all 0.3s ease;
+  }
+  
+  .route-icon {
+    fill: var(--color);
+    transition: fill 0.3s ease;
+  }
+  
+  // Estado activo
+  &.tab-selected {
+    --color-selected: #bfc6f7;
+    transform: scale(1.2);
+    
+    ion-icon {
+      filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.3));
+    }
+    
+    .route-icon {
+      fill: #bfc6f7;
+      filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.3));
+    }
+    
+    .tab-avatar {
+      border-color: #bfc6f7;
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+  }
 }
 
 ion-tab-bar ion-label {
@@ -29,4 +61,15 @@ ion-tab-bar ion-label {
   margin-bottom: 2px;
   border: 1px solid #b5aee9;
   background: #181a2e;
+  transition: all 0.3s ease;
 }
+
+// Estilos específicos para iconos outline/filled
+.tab-home-outline::before { content: "home-outline"; }
+.tab-home-filled::before { content: "home"; }
+
+.tab-add-outline::before { content: "add-outline"; }
+.tab-add-filled::before { content: "add"; }
+
+.tab-compass-outline::before { content: "compass-outline"; }
+.tab-compass-filled::before { content: "compass"; }

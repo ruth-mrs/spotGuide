@@ -1,0 +1,110 @@
+// filepath: c:\Users\ruthr\Documents\Git\spotGuide\frontend\src\app\components\custom-input\custom-input.component.scss
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-label {
+  display: block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+  margin-left: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.3px;
+}
+
+.optional-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.custom-input {
+  --background: rgba(47, 48, 52, 0.4);
+  --color: #ffffff;
+  --placeholder-color: #abb4b5;
+  --border-radius: 25px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    --background: rgba(47, 48, 52, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  &.error {
+    --background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+  }
+}
+
+.password-container .custom-input {
+  --padding-end: 50px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  --color: rgba(255, 255, 255, 0.6);
+  --background: transparent;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  min-height: 32px;
+  width: 40px;
+
+  ion-icon {
+    font-size: 18px;
+  }
+
+  &:hover {
+    --color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.error-message {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: 4px;
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .input-label {
+    margin-left: 16px;
+  }
+  
+  .error-message {
+    margin-left: 16px;
+  }
+}
