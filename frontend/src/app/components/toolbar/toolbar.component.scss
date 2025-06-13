@@ -4,6 +4,7 @@
   padding: 10px 0 0 0;
   width: 100%;
   background: transparent;
+  padding-top: var(--ion-safe-area-top, 0px);
 }
 
 .back-btn {
