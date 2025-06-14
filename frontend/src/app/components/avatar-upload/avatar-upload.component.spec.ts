@@ -9,8 +9,7 @@ describe('AvatarUploadComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ AvatarUploadComponent ],
-      imports: [IonicModule.forRoot()]
+      imports: [IonicModule.forRoot(), AvatarUploadComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AvatarUploadComponent);

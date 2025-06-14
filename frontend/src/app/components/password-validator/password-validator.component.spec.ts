@@ -9,8 +9,7 @@ describe('PasswordValidatorComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PasswordValidatorComponent ],
-      imports: [IonicModule.forRoot()]
+      imports: [IonicModule.forRoot(), PasswordValidatorComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PasswordValidatorComponent);
