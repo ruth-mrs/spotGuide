@@ -8,7 +8,6 @@
       <div class="logo-container">
         <img src="assets/icon/logo.png" alt="SpotGuide logo" class="logo" />
       </div>
-      <h1 class="register-title">Registrarse</h1>
     </div>
 
     <!-- Formulario -->
@@ -94,9 +93,13 @@
 
       <app-custom-input
         label="Descripción"
-        placeholder="Cuéntanos sobre ti..."
+        placeholder="Cuéntanos sobre ti, tus intereses, lugares favoritos que has visitado..."
         type="textarea"
         [optional]="true"
+        [maxLength]="500"
+        [counter]="true"
+        [autoGrow]="true"
+        [rows]="3"
         [(ngModel)]="registerData.description"
         name="description">
       </app-custom-input>

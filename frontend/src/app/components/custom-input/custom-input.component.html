@@ -1,24 +1,62 @@
-<div class="input-group">
+<div class="input-group" 
+     [class.focused]="isFocused" 
+     [class.has-value]="value && value.length > 0"
+     [class.disabled]="disabled">
+  
   @if (label) {
-    <label class="input-label">
+    <label class="input-label" 
+           [class.required]="required" 
+           [class.optional]="optional">
       {{ label }}
       @if (optional) {
         <span class="optional-text">(opcional)</span>
       }
+      @if (required) {
+        <span class="required-asterisk">*</span>
+      }
     </label>
   }
-  <div class="input-container" [class.password-container]="type === 'password'">
-    <ion-input
-      class="custom-input"
-      [class.error]="hasError"
-      [type]="actualType"
-      [placeholder]="placeholder"
-      [value]="value"
-      [required]="required"
-      (ionInput)="onInput($event)"
-      (ionBlur)="onBlur()">
-    </ion-input>
-    @if (type === 'password') {
+  
+  <div class="input-container" 
+       [class.password-container]="type === 'password'"
+       [class.textarea-container]="isTextarea"
+       [class.error]="hasError"
+       [class.focused]="isFocused"
+       [class.disabled]="disabled">
+    
+    @if (isTextarea) {
+      <ion-textarea
+        class="custom-input textarea-input"
+        [class.error]="hasError"
+        [class.auto-grow]="autoGrow"
+        [placeholder]="placeholder"
+        [value]="value"
+        [required]="required"
+        [rows]="rows"
+        [autoGrow]="autoGrow"
+        [disabled]="disabled"
+        [readonly]="readonly"
+        (ionInput)="onInput($event)"
+        (ionFocus)="onFocus()"
+        (ionBlur)="onBlur()">
+      </ion-textarea>
+    } @else {
+      <ion-input
+        class="custom-input"
+        [class.error]="hasError"
+        [type]="actualType"
+        [placeholder]="placeholder"
+        [value]="value"
+        [required]="required"
+        [disabled]="disabled"
+        [readonly]="readonly"
+        (ionInput)="onInput($event)"
+        (ionFocus)="onFocus()"
+        (ionBlur)="onBlur()">
+      </ion-input>
+    }
+    
+    @if (type === 'password' && !disabled) {
       <ion-button 
         fill="clear" 
         class="password-toggle"
@@ -26,10 +64,29 @@
         <ion-icon [name]="showPassword ? 'eye-off' : 'eye'" slot="icon-only"></ion-icon>
       </ion-button>
     }
+    
+    @if (counter && (isTextarea || maxLength)) {
+      <div class="character-counter" 
+           [class.over-limit]="isOverLimit"
+           [class.near-limit]="isNearLimit">
+        <span class="count-text">
+          {{ characterCount }}@if (maxLength) {/{{ maxLength }}}
+        </span>
+      </div>
+    }
   </div>
+  
   @if (hasError && errorMessage) {
     <div class="error-message">
-      {{ errorMessage }}
+      <ion-icon name="alert-circle" class="error-icon"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+  
+  @if (maxLength && isNearLimit && !hasError) {
+    <div class="warning-message">
+      <ion-icon name="alert-circle" class="warning-icon"></ion-icon>
+      <span>Te quedan {{ maxLength - characterCount }} caracteres</span>
     </div>
   }
 </div>

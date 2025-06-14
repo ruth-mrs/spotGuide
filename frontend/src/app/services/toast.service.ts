@@ -1,14 +1,15 @@
 import { Injectable } from '@angular/core';
 import { ToastController } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { checkmarkCircle, closeCircle, warning, informationCircle, sync } from 'ionicons/icons';
 
 export interface ToastOptions {
   message: string;
-  type?: 'success' | 'error' | 'warning' | 'info';
+  type?: 'success' | 'error' | 'warning' | 'info' | 'loading';
   duration?: number;
   position?: 'top' | 'middle' | 'bottom';
   showCloseButton?: boolean;
-  icon?: string;
-  translucent?: boolean;
+  persistent?: boolean;
 }
 
 @Injectable({
@@ -16,31 +17,59 @@ export interface ToastOptions {
 })
 export class ToastService {
 
-  constructor(private toastController: ToastController) {}
+  constructor(private toastController: ToastController) {
+    // Registrar todos los iconos necesarios
+    addIcons({
+      'checkmark-circle': checkmarkCircle,
+      'close-circle': closeCircle,
+      'warning': warning,
+      'information-circle': informationCircle,
+      'sync': sync
+    });
+  }
+
+  private getDefaultDuration(type: string): number {
+    switch (type) {
+      case 'success': return 3500;
+      case 'error': return 5000;
+      case 'warning': return 4500;
+      case 'info': return 3000;
+      case 'loading': return 0;
+      default: return 3000;
+    }
+  }
+
+  private getToastIcon(type: string): string {
+    switch (type) {
+      case 'success': return 'checkmark-circle';
+      case 'error': return 'close-circle';
+      case 'warning': return 'warning';
+      case 'info': return 'information-circle';
+      case 'loading': return 'sync';
+      default: return 'information-circle';
+    }
+  }
 
   private getToastConfig(options: ToastOptions) {
-    const config = {
+    const type = options.type || 'info';
+    
+    return {
       message: options.message,
-      duration: options.duration || 4000,
+      duration: options.persistent ? 0 : (options.duration || this.getDefaultDuration(type)),
       position: options.position || 'top',
-      translucent: options.translucent !== false,
-      cssClass: this.getToastClass(options.type || 'info'),
+      translucent: true,
+      cssClass: `modern-toast toast-${type}`,
+      icon: this.getToastIcon(type),
       buttons: options.showCloseButton ? [
         {
-          text: '✕',
+          text: 'Cerrar',
           role: 'cancel',
-          cssClass: 'toast-close-btn'
+          handler: () => {
+            console.log('Toast cerrado por el usuario');
+          }
         }
       ] : undefined
     };
-
-    return config;
-  }
-
-  private getToastClass(type: string): string {
-    const baseClass = 'modern-toast';
-    const typeClass = `toast-${type}`;
-    return `${baseClass} ${typeClass}`;
   }
 
   async show(options: ToastOptions) {
@@ -50,65 +79,70 @@ export class ToastService {
     return toast;
   }
 
-  async success(message: string, duration = 3000) {
+  async success(message: string, duration?: number) {
     return this.show({
       message,
       type: 'success',
-      duration,
-      icon: 'checkmark-circle'
+      duration
     });
   }
 
-  async error(message: string, duration = 4000) {
+  async error(message: string, duration?: number, persistent = false) {
     return this.show({
       message,
       type: 'error',
       duration,
-      icon: 'alert-circle',
-      showCloseButton: true
+      persistent,
+      showCloseButton: persistent
     });
   }
 
-  async warning(message: string, duration = 4000) {
+  async warning(message: string, duration?: number) {
     return this.show({
       message,
       type: 'warning',
       duration,
-      icon: 'warning',
       showCloseButton: true
     });
   }
 
-  async info(message: string, duration = 3000) {
+  async info(message: string, duration?: number) {
     return this.show({
       message,
       type: 'info',
-      duration,
-      icon: 'information-circle'
+      duration
     });
   }
 
-  async loading(message = 'Cargando...') {
+  async loading(message = 'Procesando...', persistent = true) {
     return this.show({
       message,
-      type: 'info',
-      duration: 0, // No se cierra automáticamente
+      type: 'loading',
+      persistent,
       showCloseButton: false
     });
   }
 
   async showValidationError(missingFields: string[]) {
     const message = missingFields.length > 0 
-      ? `Faltan campos requeridos: ${missingFields.join(', ')}`
-      : 'Por favor corrige los errores en el formulario';
+      ? `Faltan campos: ${missingFields.join(', ')}`
+      : 'Revisa los errores del formulario';
     
-    return this.warning(message);
+    return this.warning(message, 4000);
   }
 
   async dismiss() {
     const toast = await this.toastController.getTop();
     if (toast) {
       await toast.dismiss();
+    }
+  }
+
+  async dismissAll() {
+    let toast = await this.toastController.getTop();
+    while (toast) {
+      await toast.dismiss();
+      toast = await this.toastController.getTop();
     }
   }
 }
