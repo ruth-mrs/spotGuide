@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map, catchError, of, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { POI } from '../components/poi-card/poi-card.component';
-
+import { PaginatedResponse } from '../interfaces/search'; // IMPORTAR DESDE INTERFACES
 
 interface FoursquareVenue {
   fsq_id: string;
@@ -14,16 +14,9 @@ interface FoursquareVenue {
     region?: string;
     country?: string;
     formatted_address?: string;
-    latitude?: number;  // Hacer opcional
-    longitude?: number; // Hacer opcional
   };
-  // AÑADIR geocodes que es donde Foursquare pone las coordenadas
-  geocodes?: {
-    main?: {
-      latitude: number;
-      longitude: number;
-    };
-    roof?: {
+  geocodes: {
+    main: {
       latitude: number;
       longitude: number;
     };
@@ -31,8 +24,8 @@ interface FoursquareVenue {
   categories: Array<{
     id: string;
     name: string;
-    short_name: string;
-    plural_name: string;
+    short_name?: string;
+    plural_name?: string;
     icon: {
       prefix: string;
       suffix: string;
@@ -41,8 +34,8 @@ interface FoursquareVenue {
   distance?: number;
   rating?: number;
   stats?: {
-    total_ratings?: number;
     total_photos?: number;
+    total_ratings?: number;
     total_tips?: number;
   };
   photos?: Array<{
@@ -52,17 +45,18 @@ interface FoursquareVenue {
     width: number;
     height: number;
   }>;
+  description?: string;
+  hours?: any;
+  price?: number;
+  website?: string;
+  tel?: string;
 }
+
 interface FoursquareResponse {
   results: FoursquareVenue[];
 }
 
-interface PaginatedResponse {
-  pois: POI[];
-  total: number;
-  page: number;
-  hasMore: boolean;
-}
+// ELIMINAR LA INTERFACE PaginatedResponse DE AQUÍ - Ya está en search.interfaces.ts
 
 @Injectable({
   providedIn: 'root'
@@ -76,7 +70,7 @@ export class FoursquareService {
   
   private get headers(): HttpHeaders {
     return new HttpHeaders({
-      'Authorization': environment.fourSquareApiKey,
+      'Authorization': `${environment.fourSquareApiKey}`,
       'Accept': 'application/json'
     });
   }
@@ -133,87 +127,123 @@ export class FoursquareService {
   }
 
   // Actualizar el método loadAllNearbyPois para más debug:
+  private loadAllNearbyPois(
+    latitude: number, 
+    longitude: number, 
+    cacheKey: string
+  ): Observable<POI[]> {
+    console.log(`FoursquareService: Cargando todos los POIs cercanos para ${cacheKey}`);
+    
+    // Hacer múltiples búsquedas con diferentes radios para obtener más variedad
+    const searches = [
+      this.searchNearby(latitude, longitude, 2000, 20, 0),   // 2km, 20 items
+      this.searchNearby(latitude, longitude, 5000, 30, 0),   // 5km, 30 items
+      this.searchNearby(latitude, longitude, 10000, 40, 0),  // 10km, 40 items
+    ];
 
-private loadAllNearbyPois(
-  latitude: number, 
-  longitude: number, 
-  cacheKey: string
-): Observable<POI[]> {
-  console.log(`FoursquareService: Cargando todos los POIs cercanos para ${cacheKey}`);
-  
-  // Hacer múltiples búsquedas con diferentes radios para obtener más variedad
-  const searches = [
-    this.searchNearby(latitude, longitude, 2000, 20, 0),   // 2km, 20 items
-    this.searchNearby(latitude, longitude, 5000, 30, 0),   // 5km, 30 items
-    this.searchNearby(latitude, longitude, 10000, 40, 0),  // 10km, 40 items
-  ];
-
-  return forkJoin(searches).pipe(
-    map(results => {
-      console.log(`FoursquareService: Resultados de búsquedas:`, results.map(r => r.length));
-      
-      // Combinar todos los resultados
-      const allPois: POI[] = [];
-      results.forEach((poisArray, index) => {
-        console.log(`FoursquareService: Búsqueda ${index + 1} devolvió ${poisArray.length} POIs válidos`);
-        allPois.push(...poisArray);
-      });
-      
-      console.log(`FoursquareService: Total POIs antes de eliminar duplicados: ${allPois.length}`);
-      
-      if (allPois.length === 0) {
-        console.error('FoursquareService: ¡No se encontraron POIs válidos en ninguna búsqueda!');
-        console.error('FoursquareService: Coordenadas de búsqueda:', latitude, longitude);
-        return [];
-      }
-      
-      // Eliminar duplicados
-      const uniquePois = this.removeDuplicatePOIs(allPois);
-      
-      // Ordenar por distancia
-      const sortedPois = uniquePois.sort((a, b) => {
-        const distanceA = this.parseDistance(a.distance);
-        const distanceB = this.parseDistance(b.distance);
-        return distanceA - distanceB;
-      });
-      
-      console.log(`FoursquareService: ${sortedPois.length} POIs únicos encontrados para búsqueda cercana`);
-      console.log(`FoursquareService: Primeros 5 POIs:`, sortedPois.slice(0, 5).map(p => ({ 
-        id: p.id, 
-        name: p.name, 
-        lat: p.latitude, 
-        lng: p.longitude 
-      })));
-      
-      // Guardar en cache
-      this.allPoisCache.set(cacheKey, sortedPois);
-      
-      return sortedPois;
-    }),
-    catchError(error => {
-      console.error('Error loading all nearby POIs:', error);
-      return of([]);
-    })
-  );
-}
+    return forkJoin(searches).pipe(
+      map(results => {
+        console.log(`FoursquareService: Resultados de búsquedas:`, results.map(r => r.length));
+        
+        // Combinar todos los resultados
+        const allPois: POI[] = [];
+        results.forEach((poisArray, index) => {
+          console.log(`FoursquareService: Búsqueda ${index + 1} devolvió ${poisArray.length} POIs válidos`);
+          allPois.push(...poisArray);
+        });
+        
+        console.log(`FoursquareService: Total POIs antes de eliminar duplicados: ${allPois.length}`);
+        
+        if (allPois.length === 0) {
+          console.error('FoursquareService: ¡No se encontraron POIs válidos en ninguna búsqueda!');
+          console.error('FoursquareService: Coordenadas de búsqueda:', latitude, longitude);
+          return [];
+        }
+        
+        // Eliminar duplicados
+        const uniquePois = this.removeDuplicatePOIs(allPois);
+        
+        // Ordenar por distancia
+        const sortedPois = uniquePois.sort((a, b) => {
+          const distanceA = this.parseDistance(a.distance);
+          const distanceB = this.parseDistance(b.distance);
+          return distanceA - distanceB;
+        });
+        
+        console.log(`FoursquareService: ${sortedPois.length} POIs únicos encontrados para búsqueda cercana`);
+        console.log(`FoursquareService: Primeros 5 POIs:`, sortedPois.slice(0, 5).map(p => ({ 
+          id: p.id, 
+          name: p.name, 
+          lat: p.latitude, 
+          lng: p.longitude 
+        })));
+        
+        // Guardar en cache
+        this.allPoisCache.set(cacheKey, sortedPois);
+        
+        return sortedPois;
+      }),
+      catchError(error => {
+        console.error('Error loading all nearby POIs:', error);
+        return of([]);
+      })
+    );
+  }
 
   // También actualizar loadAllSearchResults para manejar búsquedas lejanas:
-private loadAllSearchResults(
-  query: string,
-  latitude: number, 
-  longitude: number,
-  cacheKey: string
-): Observable<POI[]> {
-  console.log(`FoursquareService: Cargando todos los resultados para "${query}"`);
-  
-  // Si es una búsqueda de ubicación, usar búsqueda global
-  if (this.isLocationQuery(query)) {
-    console.log(`FoursquareService: Búsqueda de ubicación detectada para "${query}"`);
-    const searches = [
-      this.searchByLocationName(query, 50, 0),  // Primera tanda
-      this.searchByLocationName(query, 50, 50), // Segunda tanda
-    ];
+  private loadAllSearchResults(
+    query: string,
+    latitude: number, 
+    longitude: number,
+    cacheKey: string
+  ): Observable<POI[]> {
+    console.log(`FoursquareService: Cargando todos los resultados para "${query}"`);
     
+    // Si es una búsqueda de ubicación, usar búsqueda global
+    if (this.isLocationQuery(query)) {
+      console.log(`FoursquareService: Búsqueda de ubicación detectada para "${query}"`);
+      const searches = [
+        this.searchByLocationName(query, 50, 0),  // Primera tanda
+        this.searchByLocationName(query, 50, 50), // Segunda tanda
+      ];
+      
+      return forkJoin(searches).pipe(
+        map(results => {
+          const allPois: POI[] = [];
+          results.forEach(poisArray => {
+            allPois.push(...poisArray);
+          });
+          
+          console.log(`FoursquareService: Total POIs para ubicación "${query}": ${allPois.length}`);
+          
+          const uniquePois = this.removeDuplicatePOIs(allPois);
+          const sortedPois = uniquePois.sort((a, b) => {
+            // Para búsquedas de ubicación, ordenar por rating primero
+            if (a.rating !== b.rating) {
+              return b.rating - a.rating;
+            }
+            return a.name.localeCompare(b.name);
+          });
+          
+          console.log(`FoursquareService: ${sortedPois.length} POIs únicos para "${query}"`);
+          this.allPoisCache.set(cacheKey, sortedPois);
+          
+          return sortedPois;
+        }),
+        catchError(error => {
+          console.error('Error loading location search results:', error);
+          return of([]);
+        })
+      );
+    }
+    
+    // Para búsquedas normales, usar la lógica actual
+    const searches = [
+      this.globalSearch(query, latitude, longitude, 5000, 25, 0),
+      this.globalSearch(query, latitude, longitude, 15000, 35, 0),
+      this.globalSearch(query, latitude, longitude, 30000, 45, 0),
+    ];
+
     return forkJoin(searches).pipe(
       map(results => {
         const allPois: POI[] = [];
@@ -221,97 +251,61 @@ private loadAllSearchResults(
           allPois.push(...poisArray);
         });
         
-        console.log(`FoursquareService: Total POIs para ubicación "${query}": ${allPois.length}`);
-        
         const uniquePois = this.removeDuplicatePOIs(allPois);
         const sortedPois = uniquePois.sort((a, b) => {
-          // Para búsquedas de ubicación, ordenar por rating primero
-          if (a.rating !== b.rating) {
-            return b.rating - a.rating;
-          }
-          return a.name.localeCompare(b.name);
+          const distanceA = this.parseDistance(a.distance);
+          const distanceB = this.parseDistance(b.distance);
+          return distanceA - distanceB;
         });
         
-        console.log(`FoursquareService: ${sortedPois.length} POIs únicos para "${query}"`);
+        console.log(`FoursquareService: ${sortedPois.length} POIs únicos encontrados para búsqueda "${query}"`);
         this.allPoisCache.set(cacheKey, sortedPois);
         
         return sortedPois;
       }),
       catchError(error => {
-        console.error('Error loading location search results:', error);
+        console.error('Error loading all search results:', error);
         return of([]);
       })
     );
   }
-  
-  // Para búsquedas normales, usar la lógica actual
-  const searches = [
-    this.globalSearch(query, latitude, longitude, 5000, 25, 0),
-    this.globalSearch(query, latitude, longitude, 15000, 35, 0),
-    this.globalSearch(query, latitude, longitude, 30000, 45, 0),
-  ];
-
-  return forkJoin(searches).pipe(
-    map(results => {
-      const allPois: POI[] = [];
-      results.forEach(poisArray => {
-        allPois.push(...poisArray);
-      });
-      
-      const uniquePois = this.removeDuplicatePOIs(allPois);
-      const sortedPois = uniquePois.sort((a, b) => {
-        const distanceA = this.parseDistance(a.distance);
-        const distanceB = this.parseDistance(b.distance);
-        return distanceA - distanceB;
-      });
-      
-      console.log(`FoursquareService: ${sortedPois.length} POIs únicos encontrados para búsqueda "${query}"`);
-      this.allPoisCache.set(cacheKey, sortedPois);
-      
-      return sortedPois;
-    }),
-    catchError(error => {
-      console.error('Error loading all search results:', error);
-      return of([]);
-    })
-  );
-}
 
   // Paginar resultados desde el cache - MEJORADO
   private paginateResults(
-  allPois: POI[], 
-  page: number, 
-  pageSize: number, 
-  cacheKey: string
-): PaginatedResponse {
-  const startIndex = (page - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  
-  const pagePois = allPois.slice(startIndex, endIndex);
-  const hasMore = endIndex < allPois.length;
-  
-  console.log(`FoursquareService: Paginando ${cacheKey}`);
-  console.log(`FoursquareService: Total POIs en cache: ${allPois.length}`);
-  console.log(`FoursquareService: Página ${page} - índices ${startIndex}-${Math.min(endIndex, allPois.length)}`);
-  console.log(`FoursquareService: POIs en esta página: ${pagePois.length}, hasMore: ${hasMore}`);
-  console.log(`FoursquareService: POIs solicitados en página ${page}:`, pagePois.map(p => ({ 
-    id: p.id, 
-    name: p.name 
-  })));
-  
-  // VERIFICACIÓN ADICIONAL: Si no hay POIs en esta página pero quedan en cache
-  if (pagePois.length === 0 && hasMore) {
-    console.warn(`FoursquareService: ADVERTENCIA - Página ${page} vacía pero hasMore es true`);
-    console.warn(`FoursquareService: startIndex: ${startIndex}, endIndex: ${endIndex}, total: ${allPois.length}`);
+    allPois: POI[], 
+    page: number, 
+    pageSize: number, 
+    cacheKey: string
+  ): PaginatedResponse {
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    
+    const pagePois = allPois.slice(startIndex, endIndex);
+    const hasMore = endIndex < allPois.length;
+    
+    console.log(`FoursquareService: Paginando ${cacheKey}`);
+    console.log(`FoursquareService: Total POIs en cache: ${allPois.length}`);
+    console.log(`FoursquareService: Página ${page} - índices ${startIndex}-${Math.min(endIndex, allPois.length)}`);
+    console.log(`FoursquareService: POIs en esta página: ${pagePois.length}, hasMore: ${hasMore}`);
+    console.log(`FoursquareService: POIs solicitados en página ${page}:`, pagePois.map(p => ({ 
+      id: p.id, 
+      name: p.name 
+    })));
+    
+    // VERIFICACIÓN ADICIONAL: Si no hay POIs en esta página pero quedan en cache
+    if (pagePois.length === 0 && hasMore) {
+      console.warn(`FoursquareService: ADVERTENCIA - Página ${page} vacía pero hasMore es true`);
+      console.warn(`FoursquareService: startIndex: ${startIndex}, endIndex: ${endIndex}, total: ${allPois.length}`);
+    }
+    
+    return {
+      pois: pagePois,
+      total: allPois.length,
+      page: page,
+      pageSize: pageSize, // ASEGURAR QUE ESTÁ INCLUIDO
+      hasMore: hasMore
+    };
   }
-  
-  return {
-    pois: pagePois,
-    total: allPois.length,
-    page: page,
-    hasMore: hasMore
-  };
-}
 
   // Método para limpiar cache
   clearSearchCache(searchType?: string, query?: string, latitude?: number, longitude?: number) {
@@ -330,179 +324,178 @@ private loadAllSearchResults(
   }
 
   searchNearby(latitude: number, longitude: number, radius = 5000, limit = 20, offset = 0): Observable<POI[]> {
-  const url = `${this.baseUrl}/places/search`;
-  const params = {
-    ll: `${latitude},${longitude}`,
-    radius: radius.toString(),
-    limit: limit.toString(),
-    offset: offset.toString(),
-    // CORREGIR: incluir geocodes para obtener las coordenadas
-    fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
-    sort: 'DISTANCE'
-  };
+    const url = `${this.baseUrl}/places/search`;
+    const params = {
+      ll: `${latitude},${longitude}`,
+      radius: radius.toString(),
+      limit: limit.toString(),
+      offset: offset.toString(),
+      // CORREGIR: incluir geocodes para obtener las coordenadas
+      fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
+      sort: 'DISTANCE'
+    };
 
-  console.log(`FoursquareService: Búsqueda básica cercana - radio ${radius}m, límite ${limit}, offset ${offset}`);
+    console.log(`FoursquareService: Búsqueda básica cercana - radio ${radius}m, límite ${limit}, offset ${offset}`);
 
-  return this.http.get<FoursquareResponse>(url, { 
-    headers: this.headers, 
-    params 
-  }).pipe(
-    map(response => {
-      console.log(`FoursquareService: Respuesta raw de Foursquare:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
-      
-      const validPois = response.results
-        .map(venue => this.transformVenueToPOI(venue))
-        .filter((poi): poi is POI => poi !== null);
-      
-      console.log(`FoursquareService: Búsqueda básica devolvió ${validPois.length} POIs válidos de ${response.results.length} totales`);
-      return validPois;
-    }),
-    catchError(error => {
-      console.error('Error fetching nearby places:', error);
-      return of([]);
-    })
-  );
-}
+    return this.http.get<FoursquareResponse>(url, { 
+      headers: this.headers, 
+      params 
+    }).pipe(
+      map(response => {
+        console.log(`FoursquareService: Respuesta raw de Foursquare:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
+        
+        const validPois = response.results
+          .map(venue => this.transformVenueToPOI(venue))
+          .filter((poi): poi is POI => poi !== null);
+        
+        console.log(`FoursquareService: Búsqueda básica devolvió ${validPois.length} POIs válidos de ${response.results.length} totales`);
+        return validPois;
+      }),
+      catchError(error => {
+        console.error('Error fetching nearby places:', error);
+        return of([]);
+      })
+    );
+  }
 
+  searchByText(
+    query: string,
+    latitude: number, 
+    longitude: number, 
+    radius = 10000, 
+    limit = 30,
+    offset = 0
+  ): Observable<POI[]> {
+    const url = `${this.baseUrl}/places/search`;
+    const params = {
+      query: query,
+      ll: `${latitude},${longitude}`,
+      radius: radius.toString(),
+      limit: limit.toString(),
+      offset: offset.toString(),
+      // CORREGIR: incluir geocodes para obtener las coordenadas
+      fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
+      sort: 'RELEVANCE'
+    };
 
- searchByText(
-  query: string,
-  latitude: number, 
-  longitude: number, 
-  radius = 10000, 
-  limit = 30,
-  offset = 0
-): Observable<POI[]> {
-  const url = `${this.baseUrl}/places/search`;
-  const params = {
-    query: query,
-    ll: `${latitude},${longitude}`,
-    radius: radius.toString(),
-    limit: limit.toString(),
-    offset: offset.toString(),
-    // CORREGIR: incluir geocodes para obtener las coordenadas
-    fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
-    sort: 'RELEVANCE'
-  };
+    console.log(`FoursquareService: Búsqueda por texto "${query}" - radio ${radius}m, límite ${limit}, offset ${offset}`);
 
-  console.log(`FoursquareService: Búsqueda por texto "${query}" - radio ${radius}m, límite ${limit}, offset ${offset}`);
-
-  return this.http.get<FoursquareResponse>(url, { 
-    headers: this.headers, 
-    params 
-  }).pipe(
-    map(response => {
-      console.log(`FoursquareService: Respuesta raw búsqueda texto:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
-      
-      const validPois = response.results
-        .map(venue => this.transformVenueToPOI(venue))
-        .filter((poi): poi is POI => poi !== null);
-      
-      console.log(`FoursquareService: Búsqueda por texto devolvió ${validPois.length} POIs válidos de ${response.results.length} totales`);
-      return validPois;
-    }),
-    catchError(error => {
-      console.error('Error searching places by text:', error);
-      return of([]);
-    })
-  );
-}
+    return this.http.get<FoursquareResponse>(url, { 
+      headers: this.headers, 
+      params 
+    }).pipe(
+      map(response => {
+        console.log(`FoursquareService: Respuesta raw búsqueda texto:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
+        
+        const validPois = response.results
+          .map(venue => this.transformVenueToPOI(venue))
+          .filter((poi): poi is POI => poi !== null);
+        
+        console.log(`FoursquareService: Búsqueda por texto devolvió ${validPois.length} POIs válidos de ${response.results.length} totales`);
+        return validPois;
+      }),
+      catchError(error => {
+        console.error('Error searching places by text:', error);
+        return of([]);
+      })
+    );
+  }
 
   // Detectar si es una búsqueda de ubicación (ciudad, país, etc.)
-private isLocationQuery(query: string): boolean {
-  const locationKeywords = [
-    'madrid', 'barcelona', 'sevilla', 'valencia', 'bilbao', 'zaragoza', 'málaga', 'murcia',
-    'palma', 'córdoba', 'valladolid', 'vigo', 'gijón', 'hospitalet', 'coruña', 'granada',
-    'vitoria', 'elche', 'oviedo', 'badalona', 'cartagena', 'terrassa', 'jerez', 'sabadell',
-    'pamplona', 'santander', 'toledo', 'burgos', 'logroño', 'badajoz', 'salamanca',
-    'huelva', 'lleida', 'tarragona', 'león', 'castellón', 'almería', 'ávila', 'cáceres',
-    'cuenca', 'girona', 'guadalajara', 'huesca', 'jaén', 'orense', 'palencia', 'pontevedra',
-    'segovia', 'soria', 'teruel', 'zamora',
-    // Países
-    'españa', 'france', 'portugal', 'italy', 'germany', 'uk', 'london', 'paris', 'rome',
-    'new york', 'tokyo', 'berlin', 'amsterdam'
-  ];
-  
-  const normalizedQuery = query.toLowerCase().trim();
-  return locationKeywords.some(keyword => 
-    normalizedQuery.includes(keyword) || keyword.includes(normalizedQuery)
-  );
-}
+  private isLocationQuery(query: string): boolean {
+    const locationKeywords = [
+      'madrid', 'barcelona', 'sevilla', 'valencia', 'bilbao', 'zaragoza', 'málaga', 'murcia',
+      'palma', 'córdoba', 'valladolid', 'vigo', 'gijón', 'hospitalet', 'coruña', 'granada',
+      'vitoria', 'elche', 'oviedo', 'badalona', 'cartagena', 'terrassa', 'jerez', 'sabadell',
+      'pamplona', 'santander', 'toledo', 'burgos', 'logroño', 'badajoz', 'salamanca',
+      'huelva', 'lleida', 'tarragona', 'león', 'castellón', 'almería', 'ávila', 'cáceres',
+      'cuenca', 'girona', 'guadalajara', 'huesca', 'jaén', 'orense', 'palencia', 'pontevedra',
+      'segovia', 'soria', 'teruel', 'zamora',
+      // Países
+      'españa', 'france', 'portugal', 'italy', 'germany', 'uk', 'london', 'paris', 'rome',
+      'new york', 'tokyo', 'berlin', 'amsterdam'
+    ];
+    
+    const normalizedQuery = query.toLowerCase().trim();
+    
+    return locationKeywords.some(keyword => 
+      normalizedQuery.includes(keyword) || keyword.includes(normalizedQuery)
+    );
+  }
 
-private searchByLocationName(locationName: string, limit: number = 30, offset: number = 0): Observable<POI[]> {
-  const url = `${this.baseUrl}/places/search`;
-  const params = {
-    query: locationName,
-    limit: Math.min(limit, 50).toString(),
-    offset: offset.toString(),
-    // CORREGIR: incluir geocodes para obtener las coordenadas
-    fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
-    sort: 'RELEVANCE'
-  };
+  private searchByLocationName(locationName: string, limit: number = 30, offset: number = 0): Observable<POI[]> {
+    const url = `${this.baseUrl}/places/search`;
+    const params = {
+      query: locationName,
+      limit: Math.min(limit, 50).toString(),
+      offset: offset.toString(),
+      // CORREGIR: incluir geocodes para obtener las coordenadas
+      fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos',
+      sort: 'RELEVANCE'
+    };
 
-  console.log(`FoursquareService: Búsqueda global por ubicación "${locationName}"`);
+    console.log(`FoursquareService: Búsqueda global por ubicación "${locationName}"`);
 
-  return this.http.get<FoursquareResponse>(url, { 
-    headers: this.headers, 
-    params 
-  }).pipe(
-    map(response => {
-      console.log(`FoursquareService: Respuesta raw búsqueda ubicación:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
-      
-      const validPois = response.results
-        .map(venue => this.transformVenueToPOI(venue))
-        .filter((poi): poi is POI => poi !== null);
-      
-      console.log(`FoursquareService: Búsqueda global devolvió ${validPois.length} POIs válidos de ${response.results.length} totales para "${locationName}"`);
-      return validPois;
-    }),
-    catchError(error => {
-      console.error(`Error searching globally for "${locationName}":`, error);
-      return of([]);
-    })
-  );
-}
-
+    return this.http.get<FoursquareResponse>(url, { 
+      headers: this.headers, 
+      params 
+    }).pipe(
+      map(response => {
+        console.log(`FoursquareService: Respuesta raw búsqueda ubicación:`, response.results.slice(0, 2)); // Ver primeros 2 para debug
+        
+        const validPois = response.results
+          .map(venue => this.transformVenueToPOI(venue))
+          .filter((poi): poi is POI => poi !== null);
+        
+        console.log(`FoursquareService: Búsqueda global devolvió ${validPois.length} POIs válidos de ${response.results.length} totales para "${locationName}"`);
+        return validPois;
+      }),
+      catchError(error => {
+        console.error(`Error searching globally for "${locationName}":`, error);
+        return of([]);
+      })
+    );
+  }
 
   globalSearch(
-  query: string,
-  latitude: number, 
-  longitude: number,
-  radius = 10000,
-  limit = 30,
-  offset = 0
-): Observable<POI[]> {
-  console.log(`FoursquareService: Global search "${query}" desde ${latitude}, ${longitude}`);
-  
-  // Para búsquedas de texto (como nombres de ciudades), hacer búsqueda sin restricción de ubicación
-  if (this.isLocationQuery(query)) {
-    console.log(`FoursquareService: "${query}" parece ser una búsqueda de ubicación, usando búsqueda global`);
-    return this.searchByLocationName(query, limit, offset);
-  }
-  
-  // Para búsquedas normales, usar la lógica actual
-  const foursquareSearch = this.searchByText(query, latitude, longitude, radius, Math.floor(limit * 0.8), offset);
-  const localSearch = this.searchLocalPOIs(query, latitude, longitude, radius, Math.ceil(limit * 0.2), offset);
+    query: string,
+    latitude: number, 
+    longitude: number,
+    radius = 10000,
+    limit = 30,
+    offset = 0
+  ): Observable<POI[]> {
+    console.log(`FoursquareService: Global search "${query}" desde ${latitude}, ${longitude}`);
+    
+    // Para búsquedas de texto (como nombres de ciudades), hacer búsqueda sin restricción de ubicación
+    if (this.isLocationQuery(query)) {
+      console.log(`FoursquareService: "${query}" parece ser una búsqueda de ubicación, usando búsqueda global`);
+      return this.searchByLocationName(query, limit, offset);
+    }
+    
+    // Para búsquedas normales, usar la lógica actual
+    const foursquareSearch = this.searchByText(query, latitude, longitude, radius, Math.floor(limit * 0.8), offset);
+    const localSearch = this.searchLocalPOIs(query, latitude, longitude, radius, Math.ceil(limit * 0.2), offset);
 
-  return forkJoin([foursquareSearch, localSearch]).pipe(
-    map(([foursquarePOIs, localPOIs]) => {
-      const allPOIs = [...foursquarePOIs, ...localPOIs];
-      const uniquePOIs = this.removeDuplicatePOIs(allPOIs);
-      
-      const sortedPOIs = uniquePOIs.sort((a, b) => {
-        const distanceA = this.parseDistance(a.distance);
-        const distanceB = this.parseDistance(b.distance);
-        return distanceA - distanceB;
-      });
-      
-      return sortedPOIs.slice(0, limit);
-    }),
-    catchError(error => {
-      console.error('Error in global search:', error);
-      return of([]);
-    })
-  );
-}
+    return forkJoin([foursquareSearch, localSearch]).pipe(
+      map(([foursquarePOIs, localPOIs]) => {
+        const allPOIs = [...foursquarePOIs, ...localPOIs];
+        const uniquePOIs = this.removeDuplicatePOIs(allPOIs);
+        
+        const sortedPOIs = uniquePOIs.sort((a, b) => {
+          const distanceA = this.parseDistance(a.distance);
+          const distanceB = this.parseDistance(b.distance);
+          return distanceA - distanceB;
+        });
+        
+        return sortedPOIs.slice(0, limit);
+      }),
+      catchError(error => {
+        console.error('Error in global search:', error);
+        return of([]);
+      })
+    );
+  }
 
   // Método mejorado para eliminar duplicados
   private removeDuplicatePOIs(pois: POI[]): POI[] {
@@ -567,144 +560,198 @@ private searchByLocationName(locationName: string, limit: number = 30, offset: n
   }
 
   // Reemplazar el método transformVenueToPOI:
+  private transformVenueToPOI(venue: FoursquareVenue): POI | null {
+    try {
+      // Validar que el venue tenga datos mínimos requeridos
+      if (!venue.fsq_id || !venue.name || !venue.geocodes?.main) {
+        console.warn('FoursquareService: Venue incompleto descartado:', {
+          id: venue.fsq_id,
+          name: venue.name,
+          hasGeocodes: !!venue.geocodes?.main
+        });
+        return null;
+      }
 
-private transformVenueToPOI(venue: FoursquareVenue): POI | null {
-  console.log(`FoursquareService: Transformando venue "${venue.name}":`, {
-    location: venue.location,
-    geocodes: venue.geocodes
-  });
+      const poi: POI = {
+        id: venue.fsq_id,
+        name: venue.name,
+        description: this.generateDescription(venue),
+        image: this.getVenueImage(venue),
+        rating: this.convertRating(venue.rating),
+        reviewCount: venue.stats?.total_ratings || 0,
+        category: venue.categories?.[0]?.name ? this.mapCategory(venue.categories[0].name) : 'general',
+        distance: venue.distance ? this.formatDistance(venue.distance) : 'N/A',
+        estimatedTime: venue.distance ? this.calculateEstimatedTime(venue.distance) : 'N/A',
+        latitude: venue.geocodes.main.latitude,
+        longitude: venue.geocodes.main.longitude,
+        isFavorite: false
+      };
 
-  // Obtener coordenadas de geocodes (preferido) o location (fallback)
-  let latitude: number | undefined;
-  let longitude: number | undefined;
-
-  // Priorizar geocodes.main
-  if (venue.geocodes?.main?.latitude && venue.geocodes?.main?.longitude) {
-    latitude = venue.geocodes.main.latitude;
-    longitude = venue.geocodes.main.longitude;
-    console.log(`FoursquareService: Usando geocodes.main para "${venue.name}":`, latitude, longitude);
+      return poi;
+    } catch (error) {
+      console.error('Error transforming venue to POI:', error, venue);
+      return null;
+    }
   }
-  // Fallback a geocodes.roof
-  else if (venue.geocodes?.roof?.latitude && venue.geocodes?.roof?.longitude) {
-    latitude = venue.geocodes.roof.latitude;
-    longitude = venue.geocodes.roof.longitude;
-    console.log(`FoursquareService: Usando geocodes.roof para "${venue.name}":`, latitude, longitude);
-  }
-  // Fallback a location (por si acaso)
-  else if (venue.location?.latitude && venue.location?.longitude) {
-    latitude = venue.location.latitude;
-    longitude = venue.location.longitude;
-    console.log(`FoursquareService: Usando location para "${venue.name}":`, latitude, longitude);
-  }
-
-  // Validar que tengamos coordenadas válidas
-  if (!latitude || !longitude || 
-      typeof latitude !== 'number' || 
-      typeof longitude !== 'number' ||
-      isNaN(latitude) || 
-      isNaN(longitude) ||
-      latitude === 0 || 
-      longitude === 0) {
-    console.warn(`FoursquareService: Venue "${venue.name}" no tiene coordenadas válidas:`, {
-      latitude,
-      longitude,
-      location: venue.location,
-      geocodes: venue.geocodes
-    });
-    return null;
-  }
-
-  const poi = {
-    id: venue.fsq_id,
-    name: venue.name,
-    description: this.generateDescription(venue),
-    image: this.getVenueImage(venue),
-    rating: this.convertRating(venue.rating),
-    reviewCount: venue.stats?.total_ratings || 0,
-    category: this.mapCategory(venue.categories[0]?.name || 'General'),
-    distance: this.formatDistance(venue.distance),
-    estimatedTime: this.calculateEstimatedTime(venue.distance),
-    latitude: latitude,
-    longitude: longitude,
-    isFavorite: false
-  };
-
-  console.log(`FoursquareService: POI creado exitosamente: "${poi.name}" en ${poi.latitude}, ${poi.longitude}`);
-  return poi;
-}
 
   private generateDescription(venue: FoursquareVenue): string {
-    const category = venue.categories[0]?.name || 'Lugar de interés';
-    const location = venue.location.locality || venue.location.region || venue.location.formatted_address || '';
-    return `${category} ${location ? `ubicado en ${location}` : ''}. Descubre este punto de interés y disfruta de la experiencia.`.trim();
+    const parts: string[] = [];
+    
+    if (venue.description) {
+      parts.push(venue.description);
+    }
+    
+    if (venue.categories?.[0]?.name) {
+      parts.push(`Categoría: ${venue.categories[0].name}`);
+    }
+    
+    if (venue.location?.formatted_address) {
+      parts.push(`Ubicación: ${venue.location.formatted_address}`);
+    } else if (venue.location?.locality) {
+      parts.push(`En ${venue.location.locality}`);
+    }
+    
+    if (venue.stats?.total_ratings && venue.stats.total_ratings > 0) {
+      parts.push(`${venue.stats.total_ratings} valoraciones`);
+    }
+    
+    return parts.length > 0 ? parts.join(' • ') : 'Información no disponible.';
   }
 
   private getVenueImage(venue: FoursquareVenue): string {
     if (venue.photos && venue.photos.length > 0) {
       const photo = venue.photos[0];
-      return `${photo.prefix}400x300${photo.suffix}`;
+      return `${photo.prefix}300x200${photo.suffix}`;
     }
     
-    const category = venue.categories[0]?.name.toLowerCase() || '';
-    if (category.includes('restaurant') || category.includes('food') || category.includes('cafe')) {
-      return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop';
-    } else if (category.includes('park') || category.includes('nature') || category.includes('outdoor')) {
-      return 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop';
-    } else if (category.includes('museum') || category.includes('art') || category.includes('historic')) {
-      return 'https://images.unsplash.com/photo-1566127992631-137a642a90f4?w=400&h=300&fit=crop';
+    // Imagen por defecto basada en categoría
+    const category = venue.categories?.[0]?.name?.toLowerCase() || '';
+    
+    if (category.includes('restaurant') || category.includes('food')) {
+      return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=200&fit=crop';
     } else if (category.includes('hotel') || category.includes('accommodation')) {
-      return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop';
-    } else if (category.includes('shop') || category.includes('store')) {
-      return 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop';
+      return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&h=200&fit=crop';
+    } else if (category.includes('museum') || category.includes('art')) {
+      return 'https://images.unsplash.com/photo-1535437798750-a65cb1fc6b5c?w=300&h=200&fit=crop';
+    } else if (category.includes('park') || category.includes('nature')) {
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop';
     }
     
-    return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop';
+    return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&h=200&fit=crop';
   }
 
   private convertRating(foursquareRating?: number): number {
     if (!foursquareRating) return 0;
-    return Math.round((foursquareRating / 10) * 5 * 10) / 10;
+    // Foursquare usa escala de 0-10, convertir a 0-5
+    return Math.min(5, Math.max(0, foursquareRating / 2));
   }
 
   private mapCategory(categoryName: string): string {
-    const category = categoryName.toLowerCase();
-    if (category.includes('restaurant') || category.includes('food') || category.includes('cafe') || category.includes('dining')) {
-      return 'Restaurant';
-    } else if (category.includes('park') || category.includes('nature') || category.includes('outdoor') || category.includes('recreation')) {
-      return 'Nature';
-    } else if (category.includes('museum') || category.includes('art') || category.includes('historic') || category.includes('monument')) {
-      return 'Historical';
-    } else if (category.includes('entertainment') || category.includes('theater') || category.includes('music') || category.includes('culture')) {
-      return 'Culture';
-    } else if (category.includes('shop') || category.includes('store') || category.includes('mall')) {
-      return 'Shopping';
-    } else if (category.includes('hotel') || category.includes('accommodation')) {
-      return 'Accommodation';
+    const categoryMap: { [key: string]: string } = {
+      'Restaurant': 'restaurant',
+      'Food': 'restaurant',
+      'Hotel': 'accommodation',
+      'Lodging': 'accommodation',
+      'Museum': 'culture',
+      'Art Gallery': 'culture',
+      'Park': 'nature',
+      'Beach': 'nature',
+      'Shop': 'shopping',
+      'Shopping': 'shopping',
+      'Entertainment': 'entertainment',
+      'Nightlife': 'entertainment',
+      'Historic Site': 'historical',
+      'Monument': 'historical',
+      'Church': 'historical',
+      'Sports': 'sports',
+      'Gym': 'sports',
+      'Health': 'health',
+      'Hospital': 'health',
+      'School': 'education',
+      'University': 'education',
+      'Transport': 'transport',
+      'Bus Station': 'transport'
+    };
+
+    for (const [key, value] of Object.entries(categoryMap)) {
+      if (categoryName.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
     }
-    return 'General';
+
+    return 'general';
   }
 
   private formatDistance(distance?: number): string {
     if (!distance) return 'N/A';
     
     if (distance < 1000) {
-      return `${Math.round(distance)}m`;
+      return `${Math.round(distance)} m`;
     } else {
-      return `${(distance / 1000).toFixed(1)}km`;
+      return `${(distance / 1000).toFixed(1)} km`;
     }
   }
 
   private calculateEstimatedTime(distance?: number): string {
     if (!distance) return 'N/A';
     
-    const walkingTimeMinutes = Math.round((distance / 1000) / 5 * 60);
+    const walkingSpeedKmh = 4; // 4 km/h velocidad promedio caminando
+    const distanceKm = distance / 1000;
+    const timeHours = distanceKm / walkingSpeedKmh;
     
-    if (walkingTimeMinutes < 60) {
-      return `${walkingTimeMinutes} min`;
+    if (timeHours < 1) {
+      const minutes = Math.round(timeHours * 60);
+      return `${minutes} min andando`;
     } else {
-      const hours = Math.floor(walkingTimeMinutes / 60);
-      const minutes = walkingTimeMinutes % 60;
-      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+      const hours = Math.floor(timeHours);
+      const minutes = Math.round((timeHours - hours) * 60);
+      return minutes > 0 ? `${hours}h ${minutes}min andando` : `${hours}h andando`;
     }
+  }
+
+  public findPoiInCache(poiId: string): POI | null {
+    // Buscar en todos los caches existentes
+    for (const [cacheKey, pois] of this.allPoisCache.entries()) {
+      const foundPoi = pois.find(poi => poi.id === poiId);
+      if (foundPoi) {
+        console.log(`FoursquareService: POI ${poiId} encontrado en cache ${cacheKey}`);
+        return foundPoi;
+      }
+    }
+    
+    console.log(`FoursquareService: POI ${poiId} no encontrado en ningún cache`);
+    return null;
+  }
+
+  // Obtener detalles de un venue específico
+  getVenueDetails(venueId: string): Observable<POI | null> {
+    console.log(`FoursquareService: Obteniendo detalles para venue ${venueId}`);
+    
+    // Buscar primero en cache de todos los POIs
+    const cachedPoi = this.findPoiInCache(venueId);
+    if (cachedPoi) {
+      console.log(`FoursquareService: POI encontrado en cache: ${cachedPoi.name}`);
+      return of(cachedPoi);
+    }
+    
+    // Si no está en cache, hacer petición específica
+    const url = `${this.baseUrl}/places/${venueId}`;
+    const params = {
+      fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos,description,hours,price,website,tel'
+    };
+
+    return this.http.get<any>(url, { 
+      headers: this.headers, 
+      params 
+    }).pipe(
+      map(venue => {
+        console.log(`FoursquareService: Detalles obtenidos para ${venue.name}`);
+        return this.transformVenueToPOI(venue);
+      }),
+      catchError(error => {
+        console.error(`FoursquareService: Error obteniendo detalles para ${venueId}:`, error);
+        return of(null);
+      })
+    );
   }
 }

@@ -10,6 +10,9 @@ import { PoiCardComponent, POI } from '../../components/poi-card/poi-card.compon
 import { MapComponent, MapMarker } from '../../components/map/map.component';
 import { SearchService } from '../../services/search.service';
 import { FoursquareService } from '../../services/foursquare.service';
+import { PaginatedResponse } from '../../interfaces/search'; 
+
+// ELIMINAR LA INTERFACE LOCAL PaginatedResponse
 
 @Component({
   selector: 'app-poi-list',
@@ -28,7 +31,7 @@ export class PoiListPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private searchService = inject(SearchService);
   private foursquareService = inject(FoursquareService);
-  private cdr = inject(ChangeDetectorRef); // AÑADIR ESTO
+  private cdr = inject(ChangeDetectorRef);
   
   @ViewChild(MapComponent) mapComponent!: MapComponent;
   
@@ -64,6 +67,7 @@ export class PoiListPage implements OnInit, OnDestroy {
     { value: 'accommodation', label: 'Alojamiento' }
   ];
 
+  // Resto del código permanece igual...
   ngOnInit() {
     console.log('PoiListPage: Inicializando...');
     
@@ -131,9 +135,9 @@ export class PoiListPage implements OnInit, OnDestroy {
         this.currentPage,
         this.pageSize
       ).subscribe({
-        next: (response) => {
+        next: (response: PaginatedResponse) => {
           console.log(`PoiListPage: Búsqueda completada, ${response.pois.length} resultados en esta página`);
-          console.log('Nuevos POIs recibidos:', response.pois.map(p => ({ id: p.id, name: p.name })));
+          console.log('Nuevos POIs recibidos:', response.pois.map((p: POI) => ({ id: p.id, name: p.name })));
           
           if (this.currentPage === 1) {
             this.pois = [...response.pois];
@@ -141,7 +145,7 @@ export class PoiListPage implements OnInit, OnDestroy {
             console.log(`PoiListPage: Primera página - ${this.pois.length} POIs cargados`);
           } else {
             // Verificar que no haya duplicados antes de añadir
-            const newPois = response.pois.filter(newPoi => 
+            const newPois = response.pois.filter((newPoi: POI) => 
               !this.pois.some(existingPoi => existingPoi.id === newPoi.id)
             );
             
@@ -193,9 +197,9 @@ export class PoiListPage implements OnInit, OnDestroy {
         this.currentPage,
         this.pageSize
       ).subscribe({
-        next: (response) => {
+        next: (response: PaginatedResponse) => {
           console.log(`PoiListPage: POIs cercanos cargados, ${response.pois.length} encontrados en esta página`);
-          console.log('Nuevos POIs cercanos recibidos:', response.pois.map(p => ({ id: p.id, name: p.name })));
+          console.log('Nuevos POIs cercanos recibidos:', response.pois.map((p: POI) => ({ id: p.id, name: p.name })));
           
           if (this.currentPage === 1) {
             this.pois = [...response.pois];
@@ -203,7 +207,7 @@ export class PoiListPage implements OnInit, OnDestroy {
             console.log(`PoiListPage: Primera página cercanos - ${this.pois.length} POIs cargados`);
           } else {
             // Verificar que no haya duplicados antes de añadir
-            const newPois = response.pois.filter(newPoi => 
+            const newPois = response.pois.filter((newPoi: POI) => 
               !this.pois.some(existingPoi => existingPoi.id === newPoi.id)
             );
             
@@ -291,7 +295,7 @@ export class PoiListPage implements OnInit, OnDestroy {
 
     this.subscription.add(
       searchObservable.subscribe({
-        next: (response) => {
+        next: (response: PaginatedResponse) => {
           console.log(`PoiListPage: Respuesta página ${this.currentPage}:`, {
             poisRecibidos: response.pois.length,
             totalDisponible: response.total,
@@ -301,7 +305,7 @@ export class PoiListPage implements OnInit, OnDestroy {
           if (response.pois.length > 0) {
             // Filtrar duplicados
             const existingIds = new Set(this.pois.map(p => p.id));
-            const newPois = response.pois.filter(poi => !existingIds.has(poi.id));
+            const newPois = response.pois.filter((poi: POI) => !existingIds.has(poi.id));
             
             if (newPois.length > 0) {
               this.pois = [...this.pois, ...newPois];
@@ -388,16 +392,16 @@ export class PoiListPage implements OnInit, OnDestroy {
   }
 
   onMapMarkerClick(marker: MapMarker) {
-  console.log('PoiListPage: Marcador del mapa clickeado para ver detalles:', marker.title);
-  // Buscar el POI correspondiente
-  const poi = this.pois.find(p => p.id === marker.id);
-  if (poi) {
-    console.log('PoiListPage: Navegando a detalles del POI:', poi.name);
-    this.router.navigate(['/poi-detail', poi.id]);
-  } else {
-    console.error('PoiListPage: No se encontró el POI con id:', marker.id);
-  }
-}
+    console.log('PoiListPage: Marcador del mapa clickeado para ver detalles:', marker.title);
+    // Buscar el POI correspondiente
+    const poi = this.pois.find(p => p.id === marker.id);
+    if (poi) {
+      console.log('PoiListPage: Navegando a detalles del POI:', poi.name);
+      this.router.navigate(['/poi-detail', poi.id]);
+    } else {
+      console.error('PoiListPage: No se encontró el POI con id:', marker.id);
+    }
+  } 
 
   fitAllPois() {
     if (this.mapComponent && this.filteredPois.length > 0) {
@@ -407,64 +411,66 @@ export class PoiListPage implements OnInit, OnDestroy {
   }
 
   private applyFilters() {
-  console.log(`PoiListPage: Aplicando filtros. POIs totales: ${this.pois.length}, Filtro: ${this.selectedFilter}`);
-  
-  let filtered = [...this.pois];
+    console.log(`PoiListPage: Aplicando filtros. POIs totales: ${this.pois.length}, Filtro: ${this.selectedFilter}`);
+    
+    let filtered = [...this.pois];
 
-  if (this.selectedFilter !== 'all') {
+    if (this.selectedFilter !== 'all') {
+      filtered = filtered.filter(poi => 
+        poi.category.toLowerCase() === this.selectedFilter.toLowerCase()
+      );
+    }
+
+    // Validar que todos los POIs tengan las propiedades requeridas
     filtered = filtered.filter(poi => 
-      poi.category.toLowerCase() === this.selectedFilter.toLowerCase()
+      poi && 
+      poi.id && 
+      poi.name && 
+      typeof poi.latitude === 'number' && 
+      typeof poi.longitude === 'number' &&
+      !isNaN(poi.latitude) && 
+      !isNaN(poi.longitude)
     );
+
+    this.filteredPois = filtered;
+    this.updateMapMarkers();
+    
+    console.log(`PoiListPage: Filtros aplicados, ${this.filteredPois.length} POIs mostrados de ${this.totalPois} total`);
+    
+    // FORZAR DETECCIÓN DE CAMBIOS
+    this.cdr.detectChanges();
   }
-
-  // Validar que todos los POIs tengan las propiedades requeridas
-  filtered = filtered.filter(poi => 
-    poi && 
-    poi.id && 
-    poi.name && 
-    typeof poi.latitude === 'number' && 
-    typeof poi.longitude === 'number' &&
-    !isNaN(poi.latitude) && 
-    !isNaN(poi.longitude)
-  );
-
-  this.filteredPois = filtered;
-  this.updateMapMarkers();
-  
-  console.log(`PoiListPage: Filtros aplicados, ${this.filteredPois.length} POIs mostrados de ${this.totalPois} total`);
-  
-  // FORZAR DETECCIÓN DE CAMBIOS
-  this.cdr.detectChanges();
-}
 
   private updateMapMarkers(selectedId?: string) {
-  // Filtrar POIs con coordenadas válidas
-  const validPois = this.filteredPois.filter(poi => 
-    poi.latitude !== undefined && 
-    poi.longitude !== undefined && 
-    !isNaN(poi.latitude) && 
-    !isNaN(poi.longitude) &&
-    poi.latitude !== 0 && 
-    poi.longitude !== 0
-  );
+    // Filtrar POIs con coordenadas válidas
+    const validPois = this.filteredPois.filter(poi => 
+      poi.latitude !== undefined && 
+      poi.longitude !== undefined && 
+      !isNaN(poi.latitude) && 
+      !isNaN(poi.longitude) &&
+      poi.latitude !== 0 && 
+      poi.longitude !== 0
+    );
 
-  console.log(`PoiListPage: Creando marcadores para ${validPois.length} POIs con coordenadas válidas de ${this.filteredPois.length} totales`);
+    console.log(`PoiListPage: Creando marcadores para ${validPois.length} POIs con coordenadas válidas de ${this.filteredPois.length} totales`);
 
-  this.mapMarkers = validPois.map(poi => ({
-    id: poi.id,
-    position: { lat: poi.latitude, lng: poi.longitude },
-    title: poi.name,
-    description: poi.description,      // AÑADIR descripción
-    category: poi.category,           // AÑADIR categoría
-    rating: poi.rating,               // AÑADIR rating
-    distance: poi.distance,           // AÑADIR distancia
-    isSelected: selectedId === poi.id
-  }));
-  
-  if (this.mapComponent) {
-    this.mapComponent.updateMarkers(this.mapMarkers);
+    this.mapMarkers = validPois.map(poi => ({
+      id: poi.id,
+      position: { lat: poi.latitude, lng: poi.longitude },
+      title: poi.name,
+      description: poi.description,
+      category: poi.category,
+      rating: poi.rating,
+      distance: poi.distance,
+      isSelected: selectedId === poi.id,
+      // AÑADIR VERIFICACIÓN DE POIS PERSONALIZADOS
+      isCustom: 'isCustom' in poi ? (poi as any).isCustom : false
+    }));
+    
+    if (this.mapComponent) {
+      this.mapComponent.updateMarkers(this.mapMarkers);
+    }
   }
-}
 
   get searchInfo(): string {
     if (this.isSearchMode && this.searchQuery) {
@@ -485,18 +491,18 @@ export class PoiListPage implements OnInit, OnDestroy {
   }
 
   private debugPoisState() {
-  console.log('=== DEBUG POIS STATE ===');
-  console.log('pois.length:', this.pois.length);
-  console.log('Primeros 5 POIs:', this.pois.slice(0, 5).map(p => ({ 
-    id: p.id, 
-    name: p.name, 
-    lat: p.latitude, 
-    lng: p.longitude 
-  })));
-  console.log('filteredPois.length:', this.filteredPois.length);
-  console.log('hasMoreData:', this.hasMoreData);
-  console.log('totalPois:', this.totalPois);
-  console.log('currentPage:', this.currentPage);
-  console.log('======================');
-}
+    console.log('=== DEBUG POIS STATE ===');
+    console.log('pois.length:', this.pois.length);
+    console.log('Primeros 5 POIs:', this.pois.slice(0, 5).map(p => ({ 
+      id: p.id, 
+      name: p.name, 
+      lat: p.latitude, 
+      lng: p.longitude 
+    })));
+    console.log('filteredPois.length:', this.filteredPois.length);
+    console.log('hasMoreData:', this.hasMoreData);
+    console.log('totalPois:', this.totalPois);
+    console.log('currentPage:', this.currentPage);
+    console.log('======================');
+  }
 }

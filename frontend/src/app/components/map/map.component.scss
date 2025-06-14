@@ -17,6 +17,35 @@
   overflow: hidden;
 }
 
+.custom-poi {
+  .marker-pin {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%);
+    border: 3px solid #fff;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+
+    &::before {
+      background: linear-gradient(135deg, #ff5252 0%, #ff9800 100%);
+    }
+
+    .marker-icon {
+      color: white;
+      font-size: 14px;
+    }
+  }
+
+  &.selected {
+    .marker-pin {
+      background: linear-gradient(135deg, #ff5252 0%, #ff9800 100%);
+      box-shadow: 0 6px 20px rgba(255, 82, 82, 0.6);
+      transform: scale(1.2);
+    }
+
+    .marker-pulse {
+      border-color: rgba(255, 107, 107, 0.6);
+    }
+  }
+}
+
 // Estilos para los controles de zoom personalizados
 :host ::ng-deep .custom-zoom-controls {
   display: flex;

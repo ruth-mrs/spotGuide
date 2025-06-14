@@ -6,12 +6,13 @@ export interface MapMarker {
   id: string;
   position: { lat: number; lng: number };
   title: string;
-  description?: string; // AÑADIR descripción opcional
-  category?: string;    // AÑADIR categoría opcional
-  rating?: number;      // AÑADIR rating opcional
-  distance?: string;    // AÑADIR distancia opcional
+  description?: string;
+  category?: string;
+  rating?: number;
+  distance?: string;
   icon?: string;
   isSelected?: boolean;
+  isCustom?: boolean; 
 }
 
 @Component({
@@ -59,6 +60,33 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     iconAnchor: [15, 40],
     popupAnchor: [0, -40]
   });
+
+  private customIcon = L.divIcon({
+  html: `
+    <div class="custom-marker custom-poi">
+      <div class="marker-pin">
+        <div class="marker-icon">⭐</div>
+      </div>
+    </div>
+  `,
+  className: 'custom-marker-wrapper',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+});
+
+private selectedCustomIcon = L.divIcon({
+  html: `
+    <div class="custom-marker custom-poi selected">
+      <div class="marker-pin">
+        <div class="marker-icon">⭐</div>
+      </div>
+      <div class="marker-pulse"></div>
+    </div>
+  `,
+  className: 'custom-marker-wrapper',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+});
 
   ngOnInit() {
     // Configurar iconos por defecto de Leaflet
@@ -193,11 +221,16 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Añadir nuevos marcadores
   newMarkers.forEach((markerData, index) => {
+    let markerIcon;
+    if (markerData.isCustom) {
+      markerIcon = markerData.isSelected ? this.selectedCustomIcon : this.customIcon;
+    } else {
+      markerIcon = markerData.isSelected ? this.selectedIcon : this.defaultIcon;
+    }
+
     const marker = L.marker(
       [markerData.position.lat, markerData.position.lng],
-      { 
-        icon: markerData.isSelected ? this.selectedIcon : this.defaultIcon 
-      }
+      { icon: markerIcon }
     );
 
     // Crear popup simple con título y botón

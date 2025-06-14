@@ -1,13 +1,197 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>add-poi</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="add-poi-bg">
+  <div class="background-image"></div>
+  <div class="background-gradient"></div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">add-poi</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="form-container">
+    <!-- Header section similar a login/register -->
+    <div class="page-header">
+      <h1 class="page-title">Añadir POI</h1>
+      <p class="page-subtitle">Comparte tu lugar especial con la comunidad</p>
+    </div>
+
+    <!-- Información básica -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Información básica</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Nombre -->
+        <ion-item class="form-item">
+          <ion-label position="stacked">Nombre del lugar *</ion-label>
+          <ion-input
+            [(ngModel)]="poiName"
+            placeholder="Ej: Mi lugar favorito"
+            [maxlength]="nameMaxLength"
+            class="custom-input"
+            [class.invalid]="poiName.length > 0 && !isNameValid">
+          </ion-input>
+        </ion-item>
+        <div class="character-count" [class.limit-warning]="nameCharacterCount > nameMaxLength * 0.8">
+          {{ nameCharacterCount }}/{{ nameMaxLength }}
+        </div>
+
+        <!-- Descripción -->
+        <ion-item class="form-item">
+          <ion-label position="stacked">Descripción *</ion-label>
+          <ion-textarea
+            [(ngModel)]="poiDescription"
+            placeholder="Describe qué hace especial este lugar..."
+            rows="4"
+            [maxlength]="descriptionMaxLength"
+            class="custom-input"
+            [class.invalid]="poiDescription.length > 0 && !isDescriptionValid">
+          </ion-textarea>
+        </ion-item>
+        <div class="character-count" [class.limit-warning]="descriptionCharacterCount > descriptionMaxLength * 0.8">
+          {{ descriptionCharacterCount }}/{{ descriptionMaxLength }}
+        </div>
+
+        <!-- Categoría -->
+        <ion-item class="form-item">
+          <ion-label position="stacked">Categoría</ion-label>
+          <ion-select [(ngModel)]="poiCategory" placeholder="Selecciona una categoría">
+            <ion-select-option *ngFor="let category of categories" [value]="category.value">
+              {{ category.label }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Imagen -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Imagen *</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Botón para seleccionar tipo de imagen -->
+        <ion-button 
+          *ngIf="!selectedImageType"
+          expand="block" 
+          fill="outline" 
+          class="image-selector-btn"
+          (click)="onSelectImageType()">
+          <ion-icon name="image" slot="start"></ion-icon>
+          Añadir imagen
+        </ion-button>
+
+        <!-- Preview de imagen seleccionada -->
+        <div *ngIf="selectedImage" class="image-preview">
+          <ion-img [src]="selectedImage" alt="Preview del POI" class="preview-image"></ion-img>
+          <ion-button 
+            fill="clear" 
+            size="small" 
+            class="change-image-btn"
+            (click)="onSelectImageType()">
+            Cambiar imagen
+          </ion-button>
+        </div>
+
+        <!-- Campo URL si se selecciona URL -->
+        <ion-item *ngIf="selectedImageType === 'url'" class="form-item">
+          <ion-label position="stacked">URL de la imagen</ion-label>
+          <ion-input
+            [(ngModel)]="poiImageUrl"
+            placeholder="https://ejemplo.com/imagen.jpg"
+            type="url"
+            class="custom-input"
+            [class.invalid]="poiImageUrl.length > 0 && !isValidImageUrl()">
+          </ion-input>
+        </ion-item>
+
+        <!-- Indicador de foto tomada -->
+        <div *ngIf="selectedImageType === 'camera' && !poiImageFromCamera" class="camera-status">
+          <ion-spinner *ngIf="isTakingPhoto" name="crescent"></ion-spinner>
+          <span *ngIf="!isTakingPhoto">Toca "Añadir imagen" para tomar una foto</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Ubicación -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Ubicación *</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="location-info">
+          <p>Toca en el mapa para seleccionar la ubicación exacta del POI</p>
+          <ion-button 
+            fill="outline" 
+            size="small" 
+            (click)="onUseCurrentLocation()"
+            [disabled]="isGettingLocation">
+            <ion-spinner *ngIf="isGettingLocation" name="crescent" slot="start"></ion-spinner>
+            <ion-icon *ngIf="!isGettingLocation" name="location" slot="start"></ion-icon>
+            Usar mi ubicación actual
+          </ion-button>
+        </div>
+
+        <!-- Mapa -->
+        <div class="map-container">
+          <app-map
+            [center]="mapCenter"
+            [zoom]="15"
+            [markers]="mapMarkers"
+            height="300px"
+            (mapClick)="onMapClick($event)">
+          </app-map>
+        </div>
+
+        <!-- Coordenadas seleccionadas -->
+        <div class="coordinates-display">
+          <small>
+            <strong>Ubicación:</strong> 
+            {{ selectedLocation.latitude.toFixed(6) }}, {{ selectedLocation.longitude.toFixed(6) }}
+          </small>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+      <ion-button 
+        expand="block" 
+        class="save-btn"
+        [disabled]="!isFormValid() || isSaving"
+        (click)="onSavePoi()">
+        <ion-spinner *ngIf="isSaving" name="crescent" slot="start"></ion-spinner>
+        <ion-icon *ngIf="!isSaving" name="save" slot="start"></ion-icon>
+        {{ isSaving ? 'Guardando...' : 'Guardar POI' }}
+      </ion-button>
+
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        class="cancel-btn"
+        [disabled]="isSaving"
+        (click)="onCancel()">
+        Cancelar
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Action Sheet para seleccionar tipo de imagen -->
+  <ion-action-sheet
+    [isOpen]="showImageActionSheet"
+    header="Seleccionar imagen"
+    [buttons]="imageActionSheetButtons"
+    (didDismiss)="showImageActionSheet = false">
+  </ion-action-sheet>
+
+  <!-- Toast -->
+  <ion-toast
+    [isOpen]="showToast"
+    [message]="toastMessage"
+    [color]="toastColor"
+    duration="3000"
+    position="bottom">
+  </ion-toast>
+
+  <!-- Alert para confirmar cancelación -->
+  <ion-alert
+    [isOpen]="showLocationAlert"
+    header="¿Descartar cambios?"
+    message="Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
+    [buttons]="cancelAlertButtons">
+  </ion-alert>
 </ion-content>
