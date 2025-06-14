@@ -1,0 +1,415 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+.input-group {
+  margin-bottom: 24px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  &.focused {
+    .input-label {
+      color: rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
+    }
+  }
+
+  &.has-value {
+    .input-label {
+      color: rgba(255, 255, 255, 0.95);
+    }
+  }
+}
+
+.input-label {
+  display: block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+  margin-left: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &.required .required-asterisk {
+    color: #ff6b6b;
+    margin-left: 4px;
+    font-weight: 600;
+  }
+}
+
+.optional-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  border-radius: 25px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: rgba(47, 48, 52, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  &.focused {
+    background: rgba(47, 48, 52, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.15),
+      0 0 0 2px rgba(102, 126, 234, 0.3);
+    border-color: rgba(102, 126, 234, 0.5);
+  }
+
+  &.textarea-container {
+    border-radius: 20px;
+    align-items: stretch;
+    min-height: auto;
+    
+    &.focused {
+      box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.15),
+        0 0 0 2px rgba(102, 126, 234, 0.3);
+    }
+  }
+
+  &.error {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.5);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.1);
+    
+    &.focused {
+      box-shadow: 
+        0 8px 25px rgba(220, 53, 69, 0.15),
+        0 0 0 2px rgba(220, 53, 69, 0.3);
+    }
+  }
+}
+
+.custom-input {
+  --background: transparent;
+  --color: #ffffff;
+  --placeholder-color: rgba(255, 255, 255, 0.6);
+  --border-radius: 0;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  border: none;
+  flex: 1;
+  
+  &.textarea-input {
+    --padding-top: 20px;
+    --padding-bottom: 20px;
+    resize: none;
+    min-height: 120px;
+    line-height: 1.6;
+    
+    &.auto-grow {
+      min-height: 80px;
+    }
+  }
+}
+
+.password-container .custom-input {
+  --padding-end: 55px;
+}
+
+.textarea-container {
+  .custom-input {
+    --padding-end: 50px; // Espacio para el contador
+  }
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  --color: rgba(255, 255, 255, 0.6);
+  --background: transparent;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  min-height: 36px;
+  width: 44px;
+  transition: all 0.3s ease;
+
+  ion-icon {
+    font-size: 20px;
+    transition: all 0.3s ease;
+  }
+
+  &:hover {
+    --color: rgba(255, 255, 255, 0.9);
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+}
+
+.character-counter {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  z-index: 5;
+
+  &.over-limit {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    animation: shake 0.5s ease-in-out;
+  }
+}
+
+.error-message {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #ff6b6b;
+  margin-top: 6px;
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: slideInError 0.3s ease;
+
+  .error-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+// Animaciones
+@keyframes slideInError {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+// Efectos de focus mejorados
+.input-container::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    rgba(102, 126, 234, 0.3), 
+    rgba(118, 75, 162, 0.3),
+    rgba(102, 126, 234, 0.3));
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.input-container.focused::before {
+  opacity: 1;
+  animation: borderGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes borderGlow {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.6; }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .input-label {
+    margin-left: 16px;
+    font-size: 13px;
+  }
+  
+  .custom-input {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    font-size: 15px;
+    
+    &.textarea-input {
+      --padding-start: 16px;
+      --padding-end: 16px;
+      min-height: 100px;
+    }
+  }
+  
+  .password-container .custom-input {
+    --padding-end: 50px;
+  }
+  
+  .textarea-container .custom-input {
+    --padding-end: 45px;
+  }
+  
+  .error-message {
+    margin-left: 16px;
+    font-size: 11px;
+  }
+  
+  .character-counter {
+    bottom: 10px;
+    right: 12px;
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+// Estilos para modo oscuro
+@media (prefers-color-scheme: dark) {
+  .input-container {
+    background: rgba(31, 41, 55, 0.6);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  
+  .custom-input {
+    --placeholder-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .character-counter {
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+// Efectos hover mejorados
+.input-container:hover:not(.focused):not(.error) {
+  background: rgba(47, 48, 52, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+// Textarea específicos
+.textarea-input {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+// ...existing styles...
+
+.character-counter {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  z-index: 5;
+
+  .count-text {
+    display: block;
+  }
+
+  &.near-limit {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    animation: pulse 2s infinite;
+  }
+
+  &.over-limit {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    animation: shake 0.5s ease-in-out;
+  }
+}
+
+.warning-message {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #fbbf24;
+  margin-top: 6px;
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: slideInWarning 0.3s ease;
+
+  .warning-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.input-group.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.input-container.disabled {
+  background: rgba(47, 48, 52, 0.2);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slideInWarning {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}

@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+.avatar-group {
+  margin-bottom: 20px;
+}
+
+.avatar-label {
+  display: block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+  margin-left: 20px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.3px;
+}
+
+.avatar-upload {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &.no-image {
+    background: linear-gradient(135deg, rgba(47, 48, 52, 0.4) 0%, rgba(38, 43, 60, 0.4) 100%);
+    border-radius: 15px;
+    min-height: 80px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    justify-content: center;
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(47, 48, 52, 0.5) 0%, rgba(38, 43, 60, 0.5) 100%);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+  }
+  
+  &.has-image {
+    background: transparent;
+    min-height: auto;
+    
+    &:hover .change-avatar-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.avatar-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.camera-icon {
+  font-size: 32px;
+  color: #e7e7e7;
+  margin-bottom: 8px;
+}
+
+.upload-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  color: #e7e7e7;
+  font-weight: 500;
+  text-align: center;
+}
+
+.avatar-image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.avatar-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.change-avatar-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-align: center;
+  margin-top: 8px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .avatar-image {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar-label {
+    margin-left: 16px;
+  }
+}

@@ -1,6 +1,12 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
-  @if (isLoggedIn) {
-    <app-tabs></app-tabs>
+  @if (toolbarConfig.showBack || toolbarConfig.showSearch) {
+    <app-toolbar
+      [showBack]="toolbarConfig.showBack"
+      [showSearch]="toolbarConfig.showSearch"
+      (back)="onBack()"
+      (searchChange)="onSearchChange($event)">
+    </app-toolbar>
   }
+  <ion-router-outlet></ion-router-outlet>
+  <app-tabs></app-tabs>
 </ion-app>

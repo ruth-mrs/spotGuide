@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { IonButton, IonIcon, IonSearchbar } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { arrowBack, search } from 'ionicons/icons';
 
 @Component({
   selector: 'app-toolbar',
@@ -14,6 +16,10 @@ export class ToolbarComponent {
   @Input() searchPlaceholder = 'Buscar...';
   @Output() back = new EventEmitter<void>();
   @Output() searchChange = new EventEmitter<string>();
+
+  constructor() {
+    addIcons({ 'arrow-back': arrowBack, search });
+  } 
 
   onBack() {
     this.back.emit();

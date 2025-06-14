@@ -1,0 +1,372 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+// Eliminar scroll completamente
+ion-content {
+  --overflow: hidden !important;
+}
+
+.login-bg {
+  --background: transparent;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  z-index: -2;
+  
+  @media (max-width: 768px) {
+    background-attachment: scroll;
+  }
+}
+
+.background-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 29, 0.85) 0%,
+    rgba(25, 30, 60, 0.8) 30%,
+    rgba(45, 55, 100, 0.75) 70%,
+    rgba(7, 8, 29, 0.9) 100%
+  );
+  z-index: -1;
+  
+  @media (max-width: 768px) {
+    background: linear-gradient(
+      180deg,
+      rgba(7, 8, 29, 0.9) 0%,
+      rgba(25, 30, 60, 0.85) 50%,
+      rgba(7, 8, 29, 0.9) 100%
+    );
+  }
+}
+
+.login-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 1;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+
+  &.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+  animation: logoFadeIn 0.8s ease-out 0.2s both;
+  flex-shrink: 0;
+}
+
+@keyframes logoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.logo {
+  width: 80px;
+  height: 80px;
+  filter: brightness(0) invert(1);
+  drop-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+    filter: brightness(0) invert(1) drop-shadow(0 6px 16px rgba(255, 255, 255, 0.3));
+  }
+}
+
+.login-form {
+  width: 100%;
+  max-width: 350px;
+  animation: formSlideUp 0.8s ease-out 0.4s both;
+  margin-bottom: 25px;
+  flex-shrink: 0;
+}
+
+@keyframes formSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-button {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: white;
+  --border-radius: 25px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  text-transform: none;
+
+  &:hover:not([disabled]) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  margin-right: 8px;
+}
+
+.register-link {
+  text-align: center;
+  animation: linkFadeIn 0.8s ease-out 0.6s both;
+  flex-shrink: 0;
+}
+
+@keyframes linkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.register-text {
+  font-family: 'Montserrat', sans-serif;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+}
+
+.register-link-text {
+  font-family: 'Montserrat', sans-serif;
+  color: #667eea;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 15px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #5a67d8;
+    text-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  }
+}
+
+// Estilos específicos para login con labels
+.login-form {
+  app-custom-input {
+    margin-bottom: 18px;
+    
+    .input-container {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      
+      &.focused {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(102, 126, 234, 0.6);
+        box-shadow: 
+          0 8px 25px rgba(0, 0, 0, 0.15),
+          0 0 0 2px rgba(102, 126, 234, 0.2);
+      }
+    }
+    
+    .custom-input {
+      --color: #ffffff;
+      --placeholder-color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      font-weight: 400;
+    }
+    
+    .input-label {
+      color: rgba(255, 255, 255, 0.9) !important;
+      font-family: 'Montserrat', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 500 !important;
+      margin-bottom: 6px !important;
+      display: block !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-height: 700px) {
+  .logo {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .logo-section {
+    margin-bottom: 30px;
+  }
+  
+  .login-form {
+    margin-bottom: 20px;
+    
+    app-custom-input {
+      margin-bottom: 15px;
+      
+      .input-label {
+        font-size: 12px !important;
+        margin-bottom: 4px !important;
+      }
+    }
+  }
+  
+  .login-button {
+    --padding-top: 14px;
+    --padding-bottom: 14px;
+    font-size: 16px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .register-text, .register-link-text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px !important;
+  }
+  
+  .login-form {
+    max-width: none;
+  }
+  
+  .logo {
+    width: 75px;
+    height: 75px;
+  }
+  
+  .background-image {
+    background-attachment: scroll;
+  }
+}
+
+@media (max-height: 600px) {
+  .logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .logo-section {
+    margin-bottom: 25px;
+  }
+  
+  .login-form {
+    app-custom-input {
+      margin-bottom: 12px;
+    }
+  }
+}
+
+// Efectos adicionales
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+// Forzar eliminación de scroll en toda la aplicación
+html, body {
+  overflow: hidden !important;
+  height: 100vh !important;
+  width: 100vw !important;
+}
+
+ion-app {
+  overflow: hidden !important;
+}
+
+// Ocultar todas las scrollbars
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  overflow-x: hidden !important;
+}
