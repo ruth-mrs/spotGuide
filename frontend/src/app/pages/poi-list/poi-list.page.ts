@@ -20,7 +20,7 @@ import { PaginatedResponse } from '../../interfaces/search';
   styleUrls: ['./poi-list.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonButton, IonIcon, IonSelect, IonSelectOption, IonItem, IonLabel, IonSpinner,
+    IonContent, IonSelect, IonSelectOption, IonItem, IonSpinner,
     IonInfiniteScroll, IonInfiniteScrollContent,
     CommonModule, FormsModule,
     CustomButtonComponent, PoiCardComponent, MapComponent

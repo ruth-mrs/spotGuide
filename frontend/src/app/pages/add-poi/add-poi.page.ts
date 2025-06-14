@@ -30,7 +30,7 @@ import { CustomPoiService, CustomPOI } from '../../services/custom-poi.service';
   styleUrls: ['./add-poi.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton,
+    IonContent,
     IonButton, IonIcon, IonInput, IonTextarea, IonSelect, IonSelectOption,
     IonItem, IonLabel, IonSpinner, IonToast, IonAlert, IonCard, IonCardContent,
     IonCardHeader, IonCardTitle, IonActionSheet, IonImg,
