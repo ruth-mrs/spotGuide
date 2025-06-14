@@ -1,0 +1,571 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+.add-poi-bg {
+  --background: transparent;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  z-index: -2;
+  
+  @media (max-width: 768px) {
+    background-attachment: scroll;
+    min-height: 100vh;
+    height: 100%;
+  }
+}
+
+.background-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 29, 0.85) 0%,
+    rgba(25, 30, 60, 0.8) 30%,
+    rgba(45, 55, 100, 0.75) 70%,
+    rgba(7, 8, 29, 0.9) 100%
+  );
+  z-index: -1;
+  
+  @media (max-width: 768px) {
+    background: linear-gradient(
+      180deg,
+      rgba(7, 8, 29, 0.9) 0%,
+      rgba(25, 30, 60, 0.85) 50%,
+      rgba(7, 8, 29, 0.9) 100%
+    );
+  }
+}
+
+.form-container {
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  padding-top: 60px;
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+
+  &.animate-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Header section similar to logo section
+.page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+  animation: headerFadeIn 0.8s ease-out 0.2s both;
+}
+
+@keyframes headerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin-bottom: 8px;
+}
+
+.page-subtitle {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.form-card {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  animation: cardSlideUp 0.8s ease-out both;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+  }
+
+  &:nth-child(1) { animation-delay: 0.3s; }
+  &:nth-child(2) { animation-delay: 0.4s; }
+  &:nth-child(3) { animation-delay: 0.5s; }
+  &:nth-child(4) { animation-delay: 0.6s; }
+
+  ion-card-header {
+    padding: 20px 20px 10px 20px;
+
+    ion-card-title {
+      color: white;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  ion-card-content {
+    padding: 10px 20px 20px 20px;
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-item {
+  --background: rgba(255, 255, 255, 0.05);
+  --color: white;
+  --border-radius: 15px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  ion-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .custom-input, ion-input, ion-textarea, ion-select {
+    --color: white;
+    --placeholder-color: rgba(255, 255, 255, 0.6);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+
+    &.invalid {
+      border-color: #ff6b6b !important;
+      box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2) !important;
+    }
+  }
+}
+
+.character-count {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+  margin-bottom: 12px;
+  font-weight: 400;
+
+  &.limit-warning {
+    color: #ffa726;
+    font-weight: 500;
+  }
+}
+
+// Imagen section
+.image-selector-btn {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: white;
+  --border-radius: 15px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  text-transform: none;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+}
+
+.image-preview {
+  text-align: center;
+  margin-bottom: 12px;
+
+  .preview-image {
+    width: 200px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 15px;
+    margin-bottom: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: scale(1.02);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  .change-image-btn {
+    --color: #667eea;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: none;
+
+    &:hover {
+      --color: #5a67d8;
+    }
+  }
+}
+
+.camera-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  margin-top: 12px;
+
+  span {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+  }
+
+  ion-spinner {
+    --color: #667eea;
+  }
+}
+
+// Ubicación section
+.location-info {
+  margin-bottom: 16px;
+
+  p {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  ion-button {
+    --border-color: rgba(102, 126, 234, 0.6);
+    --color: #667eea;
+    --border-radius: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-transform: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      --border-color: rgba(102, 126, 234, 0.8);
+      --color: #5a67d8;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.map-container {
+  border-radius: 15px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.coordinates-display {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  small {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+  }
+}
+
+// Action buttons
+.action-buttons {
+  margin-top: 30px;
+  padding-bottom: 40px;
+  animation: buttonsSlideUp 0.8s ease-out 0.7s both;
+
+  .save-btn {
+    --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --color: white;
+    --border-radius: 25px;
+    --padding-top: 16px;
+    --padding-bottom: 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    text-transform: none;
+    
+    &:hover:not([disabled]) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+      --background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .cancel-btn {
+    --border-color: rgba(255, 255, 255, 0.4);
+    --color: rgba(255, 255, 255, 0.9);
+    --border-radius: 25px;
+    --padding-top: 16px;
+    --padding-bottom: 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    text-transform: none;
+    transition: all 0.3s ease;
+
+    &:hover:not([disabled]) {
+      --border-color: rgba(255, 255, 255, 0.6);
+      --color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+@keyframes buttonsSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Header toolbar (si existe)
+ion-header {
+  ion-toolbar {
+    --background: rgba(7, 8, 29, 0.95);
+    --color: white;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    ion-title {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 18px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    ion-button {
+      --color: white;
+      font-family: 'Montserrat', sans-serif;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-height: 700px) {
+  .form-container {
+    padding-top: 40px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .page-subtitle {
+    font-size: 14px;
+  }
+  
+  .form-card {
+    margin-bottom: 15px;
+    
+    ion-card-header {
+      padding: 15px 15px 8px 15px;
+      
+      ion-card-title {
+        font-size: 16px;
+      }
+    }
+    
+    ion-card-content {
+      padding: 8px 15px 15px 15px;
+    }
+  }
+  
+  .action-buttons {
+    margin-top: 20px;
+    padding-bottom: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-container {
+    padding: 16px;
+    padding-top: 40px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .image-preview .preview-image {
+    width: 150px;
+    height: 112px;
+  }
+  
+  .coordinates-display small {
+    font-size: 11px;
+  }
+  
+  .background-image {
+    background-attachment: scroll;
+  }
+}
+
+@media (max-width: 360px) {
+  .form-container {
+    padding: 12px;
+    padding-top: 30px;
+  }
+  
+  .form-card {
+    border-radius: 15px;
+    
+    ion-card-header {
+      padding: 12px 12px 6px 12px;
+    }
+    
+    ion-card-content {
+      padding: 6px 12px 12px 12px;
+    }
+  }
+}
+
+// Efectos adicionales similares a login/register
+.form-container::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+  50% { 
+    opacity: 0.5; 
+    transform: translate(-50%, -50%) scale(1.1); 
+  }
+}
+
+// Ocultar scrollbars pero permitir scroll
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+// Support for iOS Safari
+@supports (-webkit-touch-callout: none) {
+  .background-image {
+    background-attachment: scroll;
+    position: absolute;
+  }
+}

@@ -1,22 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { IonicModule } from '@ionic/angular';
-import { AddPoiPage } from './add-poi.page';
+import { CustomButtonComponent } from './custom-button.component';
 
-describe('AddPoiPage', () => {
-  let component: AddPoiPage;
-  let fixture: ComponentFixture<AddPoiPage>;
+describe('CustomButtonComponent', () => {
+  let component: CustomButtonComponent;
+  let fixture: ComponentFixture<CustomButtonComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [
-        RouterTestingModule,
         IonicModule.forRoot(),
-        AddPoiPage // Importar en lugar de declarar
+        CustomButtonComponent // Importar en lugar de declarar
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AddPoiPage);
+    fixture = TestBed.createComponent(CustomButtonComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

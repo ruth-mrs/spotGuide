@@ -150,6 +150,7 @@
   margin-bottom: 20px;
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
   transition: all 0.3s ease;
+  text-transform: none;
 
   &:hover:not([disabled]) {
     transform: translateY(-2px);

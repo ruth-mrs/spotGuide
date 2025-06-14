@@ -6,11 +6,29 @@
   }
   
   @if (showSearch) {
-    <ion-searchbar
-      class="custom-searchbar"
-      [placeholder]="searchPlaceholder"
-      (ionInput)="onSearchChange($event)"
-      [style.width]="showBack ? 'calc(100% - 56px)' : '100%'"
-    ></ion-searchbar>
+    <div class="search-container">
+      <div class="search-form">
+        <ion-searchbar
+          class="custom-searchbar"
+          [placeholder]="searchPlaceholder"
+          [value]="searchValue"
+          (ionInput)="onSearchInput($event)"
+          (keyup.enter)="onEnterKeyUp($event)"
+          [debounce]="0"
+          show-clear-button="focus"
+          inputmode="search"
+          enterkeyhint="search"
+        ></ion-searchbar>
+        
+        <ion-button 
+          type="button"
+          fill="clear" 
+          class="search-submit-btn"
+          [disabled]="!searchValue.trim()"
+          (click)="onSearchButtonClick()">
+          <ion-icon name="search" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+    </div>
   }
 </div>

@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
-  IonContent, IonHeader, IonButton
+  IonContent, IonHeader
 } from '@ionic/angular/standalone';
+
+import { CustomButtonComponent } from '../../components/custom-button/custom-button.component';
 
 @Component({
   selector: 'app-home',
@@ -12,8 +14,8 @@ import {
   styleUrls: ['./home.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonHeader, IonButton,
-    CommonModule, FormsModule
+    IonContent, IonHeader,
+    CommonModule, FormsModule, CustomButtonComponent
   ]
 })
 export class HomePage implements OnInit {

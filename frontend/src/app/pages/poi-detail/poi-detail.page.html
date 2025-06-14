@@ -1,13 +1,237 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>poi-detail</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="poi-detail-bg">
+  <div class="background-gradient"></div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">poi-detail</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Cargando detalles...</p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!isLoading && poi">
+    <!-- Imagen Principal -->
+    <div class="hero-image-section">
+      <img [src]="poi.image" [alt]="poi.name" class="hero-image">
+      
+      <!-- Overlay con controles -->
+      <div class="hero-overlay">
+        <div class="hero-controls">          
+          <div class="action-buttons">
+            <ion-button 
+              fill="clear" 
+              class="action-btn"
+              (click)="onToggleFavorite()">
+              <ion-icon 
+                [name]="poi.isFavorite ? 'heart' : 'heart-outline'" 
+                slot="icon-only">
+              </ion-icon>
+            </ion-button>
+            
+            <ion-button 
+              fill="clear" 
+              class="action-btn"
+              (click)="onShare()">
+              <ion-icon name="share" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="content-section">
+      <!-- Información Principal -->
+      <div class="main-info">
+        <h1 class="poi-title">{{ poi.name }}</h1>
+        
+        <div class="location-info">
+          <ion-icon name="location-outline"></ion-icon>
+          <span>Almería, Andalucía</span>
+        </div>
+        
+        <div class="rating-info">
+          <div class="stars">
+            <ion-icon 
+              *ngFor="let filled of getStarsArray(poi.rating); let i = index"
+              [name]="filled ? 'star' : 'star-outline'"
+              class="star-icon"
+              [class.filled]="filled">
+            </ion-icon>
+          </div>
+          <span class="rating-text">{{ poi.rating.toFixed(1) }} ({{ poi.reviewCount }} reseñas)</span>
+        </div>
+        
+        @if(isCustomPoi && poiCreator) {
+        <div class="creator-info">
+          <div class="creator-badge">
+            <ion-icon name="person-circle-outline" class="creator-icon"></ion-icon>
+            <div class="creator-details">
+              <span class="creator-label">Creado por</span>
+              <span class="creator-name">{{ poiCreator.name }}</span>
+            </div>
+            <!-- Mostrar contador de favoritos si es POI personalizado -->
+             @if(poiStats && poiStats.totalFavorites > 0) {
+            <div  class="favorites-count">
+              <ion-icon name="heart" class="favorites-icon"></ion-icon>
+              <span>{{ poiStats.totalFavorites }}</span>
+            </div>
+            }
+          </div>
+        </div>
+        }
+
+        @if(canEditCurrentPoi) {
+        <!-- Botón de editar (solo si el usuario actual es el creador) -->
+        <div class="edit-actions">
+          <ion-button 
+            fill="outline" 
+            size="small" 
+            class="edit-btn"
+            (click)="onEditPoi()">
+            <ion-icon name="create-outline" slot="start"></ion-icon>
+            Editar POI
+          </ion-button>
+        </div>
+      }
+        
+        <p class="poi-description">{{ poi.description }}</p>
+        
+        <div class="poi-meta">
+          <div class="meta-item">
+            <ion-icon name="location-outline"></ion-icon>
+            <span>{{ poi.distance }}</span>
+          </div>
+          <div class="meta-item">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>{{ poi.estimatedTime }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mapa -->
+      <div class="map-section">
+        <h3 class="section-title">Ubicación</h3>
+        <div class="map-container">
+          <app-map
+            [center]="{ lat: poi.latitude, lng: poi.longitude }"
+            [zoom]="15"
+            [markers]="mapMarkers"
+            height="200px">
+          </app-map>
+        </div>
+      </div>
+
+      <!-- Comentarios -->
+      <div class="comments-section">
+        <h3 class="section-title">Comentarios</h3>
+        
+        <!-- Formulario de comentario (solo si está loggeado) -->
+        <div class="comment-form" *ngIf="isLoggedIn">
+          <div class="form-header">
+            <ion-avatar class="user-avatar">
+              <img [src]="currentUser.avatar" [alt]="currentUser.name">
+            </ion-avatar>
+            <div class="form-info">
+              <span class="user-name">{{ currentUser.name }}</span>
+              <div class="rating-selector">
+                <ion-icon 
+                  *ngFor="let star of [1,2,3,4,5]"
+                  [name]="star <= newRating ? 'star' : 'star-outline'"
+                  class="rating-star"
+                  [class.selected]="star <= newRating"
+                  (click)="onRatingClick(star)">
+                </ion-icon>
+              </div>
+            </div>
+          </div>
+          
+          <ion-textarea
+            [(ngModel)]="newComment"
+            placeholder="Comparte tu experiencia..."
+            [maxlength]="maxCommentLength"
+            rows="3"
+            class="comment-input">
+          </ion-textarea>
+          
+          <div class="form-footer">
+            <span class="character-count" 
+                  [class.limit-warning]="commentCharacterCount > maxCommentLength * 0.8">
+              {{ commentCharacterCount }}/{{ maxCommentLength }}
+            </span>
+            
+            <ion-button 
+              [disabled]="!isCommentValid || isSubmittingComment"
+              (click)="onSubmitComment()"
+              class="submit-btn">
+              <ion-spinner name="crescent" slot="start" *ngIf="isSubmittingComment"></ion-spinner>
+              <ion-icon name="send" slot="end"></ion-icon>
+              Comentar
+            </ion-button>
+          </div>
+        </div>
+
+        <!-- Prompt para login -->
+        <div class="login-prompt" *ngIf="!isLoggedIn">
+          <p>Inicia sesión para escribir un comentario</p>
+          <ion-button fill="outline" (click)="onLoginPrompt()">
+            Iniciar sesión
+          </ion-button>
+        </div>
+
+        <!-- Lista de comentarios -->
+        <div class="comments-loading" *ngIf="isLoadingComments">
+          <ion-spinner name="dots"></ion-spinner>
+          <span>Cargando comentarios...</span>
+        </div>
+
+        <div class="comments-list" *ngIf="!isLoadingComments">
+          <div class="comment-item" 
+               *ngFor="let comment of comments" 
+               [class.own-comment]="comment.isOwn">
+            <ion-avatar class="comment-avatar">
+              <img [src]="comment.userAvatar" [alt]="comment.userName">
+            </ion-avatar>
+            
+            <div class="comment-content">
+              <div class="comment-header">
+                <span class="comment-user">{{ comment.userName }}</span>
+                <div class="comment-rating">
+                  <ion-icon 
+                    *ngFor="let filled of getStarsArray(comment.rating); let i = index"
+                    [name]="filled ? 'star' : 'star-outline'"
+                    class="comment-star"
+                    [class.filled]="filled">
+                  </ion-icon>
+                </div>
+                <span class="comment-date">{{ formatDate(comment.date) }}</span>
+              </div>
+              
+              <p class="comment-text">{{ comment.text }}</p>
+            </div>
+          </div>
+          
+          <div class="no-comments" *ngIf="comments.length === 0">
+            <p>Aún no hay comentarios. ¡Sé el primero en compartir tu experiencia!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <ion-toast
+    [isOpen]="showToast"
+    [message]="toastMessage"
+    duration="3000"
+    position="bottom"
+    color="success">
+  </ion-toast>
+
+  <!-- Alert para login -->
+  <ion-alert
+    [isOpen]="showAlert"
+    header="Iniciar sesión requerido"
+    message="Necesitas iniciar sesión para escribir comentarios"
+    [buttons]="alertButtons">
+  </ion-alert>
 </ion-content>

@@ -1,0 +1,268 @@
+import { Injectable, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { FoursquareService } from './foursquare.service';
+import { POI } from '../components/poi-card/poi-card.component';
+import { CustomPoiService, CustomPOI } from './custom-poi.service';
+import { PaginatedResponse, SearchResponse, SearchLocation } from '../interfaces/search';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class SearchService {
+  private router = inject(Router);
+  private foursquareService = inject(FoursquareService);
+  private customPoiService = inject(CustomPoiService);
+
+  private lastSearchQuery: string = '';
+  private lastSearchLocation: SearchLocation = { lat: 36.8377, lng: -2.4585 };
+
+  performGlobalSearch(query: string, location?: SearchLocation): void {
+    const searchLocation = location || this.lastSearchLocation;
+    
+    this.lastSearchQuery = query;
+    this.lastSearchLocation = searchLocation;
+
+    console.log(`SearchService: Realizando búsqueda global para "${query}" en`, searchLocation);
+  }
+
+  getSearchResults(
+    query: string,
+    latitude: number,
+    longitude: number,
+    page: number = 1,
+    pageSize: number = 12
+  ): Observable<PaginatedResponse> {
+    console.log(`SearchService: Búsqueda con POIs personalizados - Query: "${query}", Página: ${page}`);
+
+    // Obtener resultados de Foursquare
+    const foursquareResults$ = query.trim() 
+      ? this.foursquareService.globalSearchPaginated(query, latitude, longitude, page, pageSize)
+      : this.foursquareService.searchNearbyPaginated(latitude, longitude, page, pageSize);
+
+    return foursquareResults$.pipe(
+      map((foursquareResponse: PaginatedResponse) => {
+        // Si no es la primera página, solo devolver resultados de Foursquare
+        if (page > 1) {
+          return foursquareResponse;
+        }
+
+        // Para la primera página, mezclar con POIs personalizados
+        const customPois = this.getRelevantCustomPois(query, latitude, longitude, pageSize);
+        console.log(`SearchService: ${customPois.length} POIs personalizados encontrados`);
+
+        // Convertir POIs personalizados al formato estándar
+        const standardizedCustomPois = customPois.map(customPoi => this.convertCustomPoiToPOI(customPoi));
+
+        // Combinar y ordenar todos los POIs
+        const allPois = [...standardizedCustomPois, ...foursquareResponse.pois];
+        const sortedPois = this.sortMixedPois(allPois, latitude, longitude);
+        
+        // Paginar el resultado combinado
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedPois = sortedPois.slice(startIndex, endIndex);
+
+        console.log(`SearchService: Devolviendo ${paginatedPois.length} POIs combinados (${standardizedCustomPois.length} personalizados + ${foursquareResponse.pois.length} Foursquare)`);
+
+        const result: PaginatedResponse = {
+          pois: paginatedPois,
+          total: Math.max(sortedPois.length, foursquareResponse.total),
+          hasMore: endIndex < sortedPois.length || foursquareResponse.hasMore,
+          page: page,
+          pageSize: pageSize
+        };
+
+        return result;
+      })
+    );
+  }
+
+  // Método simplificado para búsquedas básicas (sin POIs personalizados)
+  getBasicSearchResults(
+    query: string,
+    latitude: number,
+    longitude: number,
+    page: number = 1,
+    pageSize: number = 12
+  ): Observable<PaginatedResponse> {
+    console.log(`SearchService: Búsqueda básica - Query: "${query}", Página: ${page}`);
+
+    if (query.trim()) {
+      return this.foursquareService.globalSearchPaginated(query, latitude, longitude, page, pageSize);
+    } else {
+      return this.foursquareService.searchNearbyPaginated(latitude, longitude, page, pageSize);
+    }
+  }
+
+  get lastQuery(): string {
+    return this.lastSearchQuery;
+  }
+
+  get lastLocation(): SearchLocation {
+    return this.lastSearchLocation;
+  }
+
+  updateSearchLocation(location: SearchLocation): void {
+    this.lastSearchLocation = location;
+    console.log('SearchService: Ubicación actualizada:', location);
+  }
+
+  clearSearch(): void {
+    this.lastSearchQuery = '';
+    console.log('SearchService: Búsqueda limpiada');
+  }
+
+  hasActiveSearch(): boolean {
+    return this.lastSearchQuery.length > 0;
+  }
+
+  // MÉTODOS PRIVADOS CORREGIDOS
+
+  private getRelevantCustomPois(query: string, latitude: number, longitude: number, limit: number): CustomPOI[] {
+    try {
+      // Obtener todos los POIs personalizados (usar ID de usuario real cuando esté disponible)
+      const allCustomPois = this.getAllCustomPois();
+      
+      if (!query.trim()) {
+        // Sin query, devolver los más cercanos
+        return this.sortCustomPoisByDistance(allCustomPois, latitude, longitude).slice(0, Math.floor(limit / 2));
+      }
+
+      // Con query, buscar por texto
+      const searchResults = this.customPoiService.searchCustomPois(query, latitude, longitude);
+      return searchResults.slice(0, Math.floor(limit / 2));
+    } catch (error) {
+      console.error('SearchService: Error obteniendo POIs personalizados:', error);
+      return [];
+    }
+  }
+
+  private getAllCustomPois(): CustomPOI[] {
+    try {
+      // TODO: Integrar con servicio de autenticación real
+      const currentUserId = 'user123'; // ID de usuario temporal
+      return this.customPoiService.getUserCustomPois(currentUserId);
+    } catch (error) {
+      console.error('SearchService: Error obteniendo POIs del usuario:', error);
+      return [];
+    }
+  }
+
+  private sortCustomPoisByDistance(customPois: CustomPOI[], userLat: number, userLng: number): CustomPOI[] {
+    return [...customPois].sort((a, b) => {
+      const distanceA = this.calculateDistance(userLat, userLng, a.latitude, a.longitude);
+      const distanceB = this.calculateDistance(userLat, userLng, b.latitude, b.longitude);
+      return distanceA - distanceB;
+    });
+  }
+
+  private convertCustomPoiToPOI(customPoi: CustomPOI): POI & { isCustom: true } {
+    return {
+      id: customPoi.id,
+      name: customPoi.name,
+      description: customPoi.description,
+      image: customPoi.image,
+      rating: customPoi.rating,
+      reviewCount: customPoi.reviewCount,
+      category: customPoi.category,
+      distance: customPoi.distance,
+      estimatedTime: customPoi.estimatedTime,
+      latitude: customPoi.latitude,
+      longitude: customPoi.longitude,
+      isFavorite: customPoi.isFavorite,
+      isCustom: true // Marcador especial para identificar POIs personalizados
+    };
+  }
+
+  private sortMixedPois(pois: (POI | (POI & { isCustom: true }))[], userLat: number, userLng: number): (POI | (POI & { isCustom: true }))[] {
+    return pois.sort((a, b) => {
+      try {
+        // Priorizar POIs personalizados si están muy cerca (menos de 1km)
+        const distanceA = this.calculateDistance(userLat, userLng, a.latitude, a.longitude);
+        const distanceB = this.calculateDistance(userLat, userLng, b.latitude, b.longitude);
+
+        // Verificar si son POIs personalizados y están cerca
+        const isCustomA = 'isCustom' in a && a.isCustom;
+        const isCustomB = 'isCustom' in b && b.isCustom;
+
+        if (isCustomA && distanceA < 1 && (!isCustomB || distanceB >= 1)) {
+          return -1; // POI personalizado cercano tiene prioridad
+        }
+        if (isCustomB && distanceB < 1 && (!isCustomA || distanceA >= 1)) {
+          return 1;
+        }
+
+        // Si ambos son personalizados y cercanos, o ninguno es personalizado cercano, ordenar por distancia
+        return distanceA - distanceB;
+      } catch (error) {
+        console.error('SearchService: Error ordenando POIs:', error);
+        return 0; // Mantener orden original si hay error
+      }
+    });
+  }
+
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    try {
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    } catch (error) {
+      console.error('SearchService: Error calculando distancia:', error);
+      return 0;
+    }
+  }
+
+  // MÉTODOS ADICIONALES PARA GESTIÓN DE POIs PERSONALIZADOS
+
+  // Actualizar distancias de POIs personalizados cuando cambie la ubicación del usuario
+  updateCustomPoisDistances(userLatitude: number, userLongitude: number): void {
+    try {
+      this.customPoiService.updateDistancesFromLocation(userLatitude, userLongitude);
+      console.log('SearchService: Distancias de POIs personalizados actualizadas');
+    } catch (error) {
+      console.error('SearchService: Error actualizando distancias de POIs personalizados:', error);
+    }
+  }
+
+  // Verificar si un POI es personalizado por su ID
+  isCustomPoi(poiId: string): boolean {
+    return poiId.startsWith('custom_');
+  }
+
+  // Obtener un POI personalizado específico
+  getCustomPoiById(poiId: string): CustomPOI | null {
+    try {
+      return this.customPoiService.getCustomPoiById(poiId);
+    } catch (error) {
+      console.error('SearchService: Error obteniendo POI personalizado:', error);
+      return null;
+    }
+  }
+
+  // Obtener estadísticas de POIs personalizados
+  getCustomPoisStats(): { total: number; byCategory: { [key: string]: number } } {
+    try {
+      const allCustomPois = this.getAllCustomPois();
+      const byCategory: { [key: string]: number } = {};
+
+      allCustomPois.forEach(poi => {
+        byCategory[poi.category] = (byCategory[poi.category] || 0) + 1;
+      });
+
+      return {
+        total: allCustomPois.length,
+        byCategory
+      };
+    } catch (error) {
+      console.error('SearchService: Error obteniendo estadísticas de POIs personalizados:', error);
+      return { total: 0, byCategory: {} };
+    }
+  }
+}

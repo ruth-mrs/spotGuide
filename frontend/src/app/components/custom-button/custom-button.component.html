@@ -1,0 +1,22 @@
+<ion-button 
+  [expand]="expand"
+  [class]="buttonClasses"
+  [disabled]="disabled || loading"
+  (click)="onClick()">
+  
+  @if (loading) {
+    <div class="loading-spinner" slot="start"></div>
+  } @else if (icon && iconPosition === 'start') {
+    <ion-icon [name]="icon" slot="start"></ion-icon>
+  }
+  
+  @if (iconPosition !== 'icon-only') {
+    {{ text }}
+  }
+  
+  @if (icon && iconPosition === 'end') {
+    <ion-icon [name]="icon" slot="end"></ion-icon>
+  } @else if (icon && iconPosition === 'icon-only') {
+    <ion-icon [name]="icon" slot="icon-only"></ion-icon>
+  }
+</ion-button>
