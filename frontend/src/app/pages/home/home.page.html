@@ -13,24 +13,42 @@
 
   @if (isLoggedIn) {
     <div class="button-group">
-      <ion-button expand="block" class="custom-button primary-btn" (click)="navigateTo('/pois')">
-        Ver puntos
-      </ion-button>
-      <ion-button expand="block" class="custom-button secondary-btn" (click)="navigateTo('/generate-route')">
-        Generar rutas
-      </ion-button>
+      <app-custom-button
+        text="Ver puntos"
+        variant="primary"
+        size="large"
+        (buttonClick)="navigateTo('/pois')">
+      </app-custom-button>
+      
+      <app-custom-button
+        text="Generar rutas"
+        variant="secondary"
+        size="large"
+        (buttonClick)="navigateTo('/generate-route')">
+      </app-custom-button>
     </div>
   } @else {
     <div class="button-group">
-      <ion-button expand="block" class="custom-button primary-btn" (click)="navigateTo('/register')">
-        Registrarse
-      </ion-button>
-      <ion-button expand="block" class="custom-button secondary-btn" (click)="navigateTo('/login')">
-        Iniciar sesión
-      </ion-button>
-      <ion-button expand="block" class="custom-button tertiary-btn" (click)="navigateTo('/pois')">
-        Ver puntos
-      </ion-button>
+      <app-custom-button
+        text="Registrarse"
+        variant="primary"
+        size="large"
+        (buttonClick)="navigateTo('/register')">
+      </app-custom-button>
+      
+      <app-custom-button
+        text="Iniciar sesión"
+        variant="secondary"
+        size="large"
+        (buttonClick)="navigateTo('/login')">
+      </app-custom-button>
+      
+      <app-custom-button
+        text="Ver puntos"
+        variant="tertiary"
+        size="large"
+        (buttonClick)="navigateTo('/pois')">
+      </app-custom-button>
     </div>
   }
 </ion-content>

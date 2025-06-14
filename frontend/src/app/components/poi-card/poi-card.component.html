@@ -1,0 +1,57 @@
+<ion-card class="poi-card" (click)="onCardClick($event)">
+  <div class="card-image-container">
+    <img [src]="poi.image" [alt]="poi.name" class="card-image">
+    <ion-button 
+      fill="clear" 
+      class="favorite-btn"
+      (click)="onFavoriteClick($event)">
+      <ion-icon 
+        [name]="poi.isFavorite ? 'heart' : 'heart-outline'"
+        [class.favorited]="poi.isFavorite">
+      </ion-icon>
+    </ion-button>
+  </div>
+  
+  <ion-card-content class="card-content">
+    <div class="poi-header">
+      <h2 class="poi-name">{{ poi.name }}</h2>
+      <ion-chip class="category-chip" [class]="'category-' + poi.category.toLowerCase()">
+        <ion-label>{{ poi.category }}</ion-label>
+      </ion-chip>
+    </div>
+    
+    <div class="rating-section">
+      <div class="stars">
+        @for (star of getRatingStars(); track star) {
+          <ion-icon 
+            [name]="star < poi.rating ? 'star' : 'star-outline'"
+            class="star-icon">
+          </ion-icon>
+        }
+      </div>
+      <span class="rating-text">{{ poi.rating }} ({{ poi.reviewCount }})</span>
+    </div>
+    
+    <p class="poi-description">{{ poi.description }}</p>
+    
+    <div class="poi-info">
+      <div class="info-item">
+        <ion-icon name="location" class="info-icon"></ion-icon>
+        <span>{{ poi.distance }}</span>
+      </div>
+      <div class="info-item">
+        <ion-icon name="time" class="info-icon"></ion-icon>
+        <span>{{ poi.estimatedTime }}</span>
+      </div>
+    </div>
+    
+    <!-- Cambiar el botón para ir a detalles -->
+    <ion-button 
+      expand="block" 
+      class="view-details-btn"
+      (click)="onViewDetails($event)">
+      <ion-icon name="eye" slot="start"></ion-icon>
+      Ver detalles
+    </ion-button>
+  </ion-card-content>
+</ion-card>

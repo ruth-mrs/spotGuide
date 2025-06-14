@@ -1,0 +1,366 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+.poi-list-bg {
+  --background: transparent;
+  position: relative;
+}
+
+.background-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 29, 0) 0%,
+    rgba(7, 8, 29, 0) 40%,
+    rgba(7, 8, 29, 0.6) 60%,
+    rgba(7, 8, 29, 1) 100%
+  );
+  z-index: -1;
+}
+
+// Mapa extendido sin toolbar - ocupa desde arriba
+.map-section-extended {
+  position: relative;
+  width: 100%;
+  height: 50vh;
+  z-index: 1;
+  padding-top: env(safe-area-inset-top);
+  
+  app-map {
+    border-radius: 0 !important;
+    overflow: visible;
+    
+    ::ng-deep .map-wrapper {
+      border-radius: 0 !important;
+      height: 100% !important;
+    }
+    
+    ::ng-deep .map-container {
+      border-radius: 0 !important;
+    }
+  }
+}
+
+// Contenido principal
+.content-section {
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 29, 0.8) 0%,
+    rgba(7, 8, 29, 0.95) 20%,
+    rgba(7, 8, 29, 1) 100%
+  );
+  border-radius: 24px 24px 0 0;
+  margin-top: -24px;
+  position: relative;
+  z-index: 100;
+  padding-top: 24px;
+  min-height: 50vh;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+// Sección de información de búsqueda
+.search-info-section {
+  padding: 0 16px 16px 16px;
+  
+  .search-info-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 12px 0;
+    text-align: center;
+  }
+  
+  .loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  
+  ion-spinner {
+    --color: #667eea;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .search-progress {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+  }
+}
+}
+
+// Sección del botón añadir puntos
+.add-points-section {
+  padding: 0 16px 20px 16px;
+  display: flex;
+  justify-content: center;
+  
+  app-custom-button {
+    max-width: 200px;
+    width: 100%;
+  }
+}
+
+.filters-section {
+  padding: 0 16px 16px 16px;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-item {
+  --background: rgba(47, 48, 52, 0.6);
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
+  
+  .category-select {
+    --color: white;
+    --placeholder-color: rgba(255, 255, 255, 0.7);
+    font-family: 'Montserrat', sans-serif;
+  }
+}
+
+.pois-section {
+  padding: 0 16px;
+  padding-bottom: 20px;
+}
+
+.pois-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pois-count {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.pois-showing {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+// Cuadrícula de POIs
+.pois-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  
+  // Para pantallas grandes (desktop)
+  @media (min-width: 1200px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  // Para tablets
+  @media (min-width: 768px) and (max-width: 1199px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  
+  // Para móviles grandes
+  @media (min-width: 600px) and (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  // Para móviles pequeños
+  @media (max-width: 599px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.poi-grid-item {
+  display: flex;
+  min-height: 300px;
+  
+  app-poi-card {
+    width: 100%;
+  }
+}
+
+// Loading más elementos
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  
+  ion-spinner {
+    --color: #667eea;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  grid-column: 1 / -1; // Ocupar todo el ancho de la cuadrícula
+}
+
+.no-results-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-results h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 8px 0;
+}
+
+.no-results p {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+// Responsive específico
+@media (max-width: 480px) {
+  .map-section-extended {
+    height: 45vh;
+  }
+  
+  .content-section {
+    min-height: 55vh;
+  }
+  
+  .search-info-section {
+    padding: 0 12px 12px 12px;
+    
+    .search-info-title {
+      font-size: 18px;
+    }
+  }
+  
+  .add-points-section {
+    padding: 0 12px 16px 12px;
+  }
+  
+  .filters-section,
+  .pois-section {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  .filters-section {
+    padding-bottom: 12px;
+  }
+  
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .pois-grid {
+    gap: 12px;
+  }
+}
+
+@media (max-height: 700px) {
+  .map-section-extended {
+    height: 40vh;
+  }
+  
+  .content-section {
+    min-height: 60vh;
+  }
+}
+
+// Infinite scroll styling
+ion-infinite-scroll {
+  margin-bottom: 100px; // Espacio para tabs
+}
+
+ion-infinite-scroll-content {
+  --color: rgba(255, 255, 255, 0.7);
+  font-family: 'Montserrat', sans-serif;
+}
+
+// Estilos para el select de Ionic
+ion-select {
+  --color: white !important;
+  --placeholder-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+ion-select-option {
+  --color: #333 !important;
+  --background: white !important;
+}
+
+// Animaciones de entrada
+@keyframes slideUpContent {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInGrid {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-section {
+  animation: slideUpContent 0.6s ease-out;
+}
+
+.pois-grid {
+  animation: fadeInGrid 0.8s ease-out 0.3s both;
+}
+
+.poi-grid-item {
+  animation: fadeInGrid 0.6s ease-out both;
+  
+  // Animación escalonada para los elementos
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{0.1 + ($i * 0.05)}s;
+    }
+  }
+}

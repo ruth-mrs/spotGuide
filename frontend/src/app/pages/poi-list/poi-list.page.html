@@ -1,13 +1,128 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>poi-list</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="poi-list-bg">
+  <div class="background-gradient"></div>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">poi-list</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Mapa extendido que ocupa desde arriba -->
+  <div class="map-section-extended">
+    <app-map
+      [center]="currentCenter" 
+      [zoom]="13"
+      [markers]="mapMarkers"
+      height="50vh"
+      (mapClick)="onMapClick($event)"
+      (markerClick)="onMapMarkerClick($event)">
+    </app-map>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="content-section">
+    <!-- Información de búsqueda -->
+    <div class="search-info-section">
+      <h2 class="search-info-title">{{ searchInfo }}</h2>
+      @if (isLoading && currentPage === 1) {
+        <div class="loading-indicator">
+          <ion-spinner name="crescent"></ion-spinner>
+          <span>Buscando...</span>
+        </div>
+      }
+    </div>
+
+    <!-- Botón Añadir puntos (solo si no estamos en modo búsqueda) -->
+    @if (!isSearchMode) {
+      <div class="add-points-section">
+        <app-custom-button
+          text="Añadir puntos"
+          variant="accent"
+          size="medium"
+          icon="add"
+          iconPosition="start"
+          (buttonClick)="onAddPoints()">
+        </app-custom-button>
+      </div>
+    }
+
+    <!-- Filtros -->
+    <div class="filters-section">
+      <div class="filter-controls">
+        <ion-item class="filter-item">
+          <ion-select
+            [(ngModel)]="selectedFilter"
+            (ionChange)="onFilterChange()"
+            placeholder="Filtrar por categoría"
+            class="category-select">
+            @for (option of filterOptions; track option.value) {
+              <ion-select-option [value]="option.value">
+                {{ option.label }}
+              </ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+      </div>
+    </div>
+
+    <!-- Lista de POIs en cuadrícula -->
+    <div class="pois-section">
+      <div class="pois-header">
+        <h3 class="pois-count">{{ totalPois }} puntos encontrados</h3>
+        @if (filteredPois.length !== totalPois) {
+          <span class="pois-showing">Mostrando {{ filteredPois.length }}</span>
+        }
+      </div>
+      
+      <!-- Cuadrícula de POIs - AÑADIR TRACKBY PARA MEJOR RENDIMIENTO -->
+      <div class="pois-grid">
+        @for (poi of filteredPois; track poi.id) {
+          <div class="poi-grid-item">
+            <app-poi-card
+              [poi]="poi"
+              (cardClick)="onPoiCardClick($event)"
+              (favoriteToggle)="onFavoriteToggle($event)"
+              (viewDetails)="onViewDetails($event)">
+            </app-poi-card>
+          </div>
+        }
+      </div>
+      
+      <!-- Loading indicator para infinite scroll -->
+      @if (isLoadingMore) {
+        <div class="loading-more">
+          <ion-spinner name="dots"></ion-spinner>
+          <span>{{ loadingStatusInfo }}</span>
+          @if (consecutiveEmptyPages > 0) {
+            <div class="search-progress">
+              <small>Ampliando área de búsqueda...</small>
+            </div>
+          }
+        </div>
+      }
+      
+      <!-- Sin resultados -->
+      @if (filteredPois.length === 0 && !isLoading) {
+        <div class="no-results">
+          <div class="no-results-icon">
+            {{ isSearchMode ? '🔍' : '📍' }}
+          </div>
+          <h3>
+            {{ isSearchMode ? 'No se encontraron resultados' : 'No hay puntos cercanos' }}
+          </h3>
+          <p>
+            {{ isSearchMode 
+              ? 'Intenta con otros términos de búsqueda' 
+              : 'Intenta cambiar los filtros o buscar en otra ubicación' 
+            }}
+          </p>
+        </div>
+      }
+    </div>
+  </div>
+
+  <ion-infinite-scroll 
+    threshold="100px" 
+    position="bottom"
+    [disabled]="!hasMoreData"
+    (ionInfinite)="loadMorePois($event)">
+    <ion-infinite-scroll-content
+      loading-spinner="bubbles"
+      loading-text="Cargando más puntos...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
 </ion-content>

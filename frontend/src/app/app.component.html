@@ -1,12 +1,18 @@
 <ion-app>
   @if (toolbarConfig.showBack || toolbarConfig.showSearch) {
-    <app-toolbar
+    <app-toolbar 
+      class="global-toolbar"
       [showBack]="toolbarConfig.showBack"
       [showSearch]="toolbarConfig.showSearch"
+      [searchPlaceholder]="getSearchPlaceholder()"
+      [isGlobalSearch]="true"
+      [currentLocation]="currentLocation"
       (back)="onBack()"
-      (searchChange)="onSearchChange($event)">
+      (searchSubmit)="onSearchSubmit($event)">
     </app-toolbar>
   }
-  <ion-router-outlet></ion-router-outlet>
+
+  <ion-router-outlet id="main-content"></ion-router-outlet>
+
   <app-tabs></app-tabs>
 </ion-app>

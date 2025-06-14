@@ -7,5 +7,6 @@ export const environment = {
     storageBucket: "proyectofinal2425.firebasestorage.app",
     messagingSenderId: "334137635326",
     appId: "1:334137635326:web:42100559711b748037d0af"
-  }
+  },
+  fourSquareApiKey: "fsq3N3pKFyc36I6HJvM39OhLDDnt1iIlGR8+/sLz5K4sN+4="
 };

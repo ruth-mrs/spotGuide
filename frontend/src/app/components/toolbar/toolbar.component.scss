@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
 .toolbar-container {
   display: flex;
   align-items: center;
@@ -7,12 +9,13 @@
   padding-top: calc(var(--ion-safe-area-top, 0px) + 10px);
   position: relative;
   z-index: 1000;
+  gap: 8px;
 }
 
 .back-btn {
-  --background: rgba(54, 62, 122, 0.8);
+  --background: rgba(0, 0, 0, 0.3);
   --color: #fff;
-  --border-radius: 100%;
+  --border-radius: 50%;
   margin: 8px;
   min-width: 44px;
   min-height: 44px;
@@ -25,27 +28,244 @@
   --padding-bottom: 5px;
   --padding-start: 0.7em;
   --padding-end: 0.7em;
+  position: relative;
+  
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    --background: rgba(0, 0, 0, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    --background: rgba(0, 0, 0, 0.5);
+  }
+  
+  .icon-back {
+    font-size: 20px;
+    font-weight: bold;
+  }
+}
+
+.search-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search-form {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
 }
 
 .custom-searchbar {
-  --background: rgba(47, 48, 52, 0.4);
+  --background: rgba(0, 0, 0, 0.25);
   --color: #fff;
-  --placeholder-color: #fff;
+  --placeholder-color: rgba(255, 255, 255, 0.7);
   --border-radius: 25px;
   --box-shadow: none;
-  flex: 1 1 0%;
+  flex: 1;
   min-width: 0;
   margin: 0;
   height: 44px;
-  backdrop-filter: blur(10px); 
-  -webkit-backdrop-filter: blur(10px); 
+  position: relative;
+  
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    --background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:focus-within {
+    --background: rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  }
 }
 
-// Si nada de lo anterior funciona, usa esto:
+.search-submit-btn {
+  --background: rgba(102, 126, 234, 0.8);
+  --color: #fff;
+  --border-radius: 50%;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:not([disabled]):hover {
+    --background: rgba(102, 126, 234, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  
+  &:not([disabled]):active {
+    transform: translateY(0);
+    --background: rgba(90, 111, 216, 1);
+  }
+  
+  &[disabled] {
+    --background: rgba(102, 126, 234, 0.3);
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+  }
+  
+  ion-icon {
+    font-size: 20px;
+  }
+}
+
+// Estilos más específicos para el searchbar
 ion-searchbar.custom-searchbar {
-  --icon-color: #fff;
+  --icon-color: rgba(255, 255, 255, 0.8);
+  
+  .searchbar-input-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
   
   .native-input {
     color: #fff !important;
+    background: transparent !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 400 !important;
+    
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7) !important;
+      font-family: 'Montserrat', sans-serif !important;
+    }
+    
+    &:focus {
+      background: transparent !important;
+    }
+  }
+  
+  .searchbar-search-icon {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+  
+  .searchbar-clear-button {
+    color: rgba(255, 255, 255, 0.8) !important;
+    
+    &:hover {
+      color: rgba(255, 255, 255, 1) !important;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 480px) {
+  .toolbar-container {
+    padding: 8px 12px 6px 12px;
+    gap: 6px;
+  }
+  
+  .back-btn {
+    margin: 6px;
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    
+    .icon-back {
+      font-size: 18px;
+    }
+  }
+  
+  .custom-searchbar {
+    height: 40px;
+    --border-radius: 20px;
+  }
+  
+  .search-submit-btn {
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+}
+
+// Animaciones
+@keyframes fadeInToolbar {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toolbar-container {
+  animation: fadeInToolbar 0.3s ease-out;
+}
+
+// Estados de interacción mejorados
+.back-btn:not(:disabled):hover,
+.search-submit-btn:not(:disabled):hover {
+  --ripple-color: rgba(255, 255, 255, 0.2);
+}
+
+.custom-searchbar:focus-within .searchbar-input-container {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+// Efecto visual cuando se está escribiendo
+.search-form:focus-within {
+  .search-submit-btn:not([disabled]) {
+    --background: rgba(102, 126, 234, 1);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+  }
+}
+
+// Indicador visual de que hay texto para buscar
+.search-submit-btn:not([disabled]) {
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #4CAF50;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &:not([disabled])::before {
+    opacity: 1;
   }
 }
