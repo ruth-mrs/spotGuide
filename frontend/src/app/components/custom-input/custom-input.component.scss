@@ -47,6 +47,7 @@
 }
 
 .input-container {
+  min-height: 56px; 
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -57,6 +58,17 @@
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  .password-toggle {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &.password-container {
+    .custom-input {
+      --padding-end: 60px !important;
+    }
+  }
 
   &.focused {
     background: rgba(47, 48, 52, 0.6);
@@ -107,16 +119,79 @@
   border: none;
   flex: 1;
   
+  // QUITAR OUTLINE Y FOCUS STYLES DE IONIC
+  outline: none !important;
+  box-shadow: none !important;
+  
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  // Desactivar estilos de focus de Ionic
+  &.ion-focused {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
   &.textarea-input {
     --padding-top: 20px;
     --padding-bottom: 20px;
     resize: none;
     min-height: 120px;
     line-height: 1.6;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
     
     &.auto-grow {
       min-height: 80px;
     }
+  }
+}
+
+// Estilos específicos para el elemento input nativo
+.custom-input input,
+.custom-input textarea {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+// Estilos para ion-input específicamente
+ion-input {
+  --highlight-color: transparent !important;
+  --border-color: transparent !important;
+  --border-style: none !important;
+  --border-width: 0 !important;
+  
+  &.ion-focused {
+    --highlight-color: transparent !important;
+    --border-color: transparent !important;
+  }
+}
+
+// Estilos para ion-textarea específicamente
+ion-textarea {
+  --highlight-color: transparent !important;
+  --border-color: transparent !important;
+  --border-style: none !important;
+  --border-width: 0 !important;
+  
+  &.ion-focused {
+    --highlight-color: transparent !important;
+    --border-color: transparent !important;
   }
 }
 
@@ -131,31 +206,50 @@
 }
 
 .password-toggle {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  --color: rgba(255, 255, 255, 0.6);
-  --background: transparent;
-  --padding-start: 8px;
-  --padding-end: 8px;
-  min-height: 36px;
-  width: 44px;
-  transition: all 0.3s ease;
+  position: absolute !important;
+  right: 12px !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  margin: auto !important;
+  height: 40px !important;
+  width: 40px !important;
+  z-index: 10 !important;
+  --color: rgba(255, 255, 255, 0.6) !important;
+  --background: transparent !important;
+  --padding-start: 0px !important;
+  --padding-end: 0px !important;
+  --padding-top: 0px !important;
+  --padding-bottom: 0px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+  outline: none !important;
+  transform: none !important;
+  
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
 
   ion-icon {
-    font-size: 20px;
-    transition: all 0.3s ease;
+    font-size: 20px !important;
+    transition: all 0.3s ease !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    transform: none !important;
   }
 
   &:hover {
-    --color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-50%) scale(1.1);
+    --color: rgba(255, 255, 255, 0.9) !important;
+    --background: rgba(255, 255, 255, 0.1) !important;
+    transform: scale(1.05) !important;
   }
 
   &:active {
-    transform: translateY(-50%) scale(0.95);
+    transform: scale(0.95) !important;
   }
 }
 
@@ -174,6 +268,17 @@
   -webkit-backdrop-filter: blur(5px);
   transition: all 0.3s ease;
   z-index: 5;
+
+  .count-text {
+    display: block;
+  }
+
+  &.near-limit {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    animation: pulse 2s infinite;
+  }
 
   &.over-limit {
     color: #ff6b6b;
@@ -200,8 +305,46 @@
   }
 }
 
+.warning-message {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #fbbf24;
+  margin-top: 6px;
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: slideInWarning 0.3s ease;
+
+  .warning-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.input-group.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.input-container.disabled {
+  background: rgba(47, 48, 52, 0.2);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
 // Animaciones
 @keyframes slideInError {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInWarning {
   from { 
     opacity: 0; 
     transform: translateY(-10px); 
@@ -216,6 +359,11 @@
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 // Efectos de focus mejorados
@@ -265,9 +413,11 @@
     }
   }
   
-  .password-container .custom-input {
-    --padding-end: 50px;
+.password-container {
+  .custom-input {
+    --padding-end: 60px; // Aumentar el padding para dar más espacio al ícono
   }
+}
   
   .textarea-container .custom-input {
     --padding-end: 45px;
@@ -283,6 +433,21 @@
     right: 12px;
     font-size: 10px;
     padding: 3px 6px;
+  }
+
+  .password-toggle {
+    right: 10px;
+    min-height: 36px;
+    width: 36px;
+    height: 36px;
+    
+    ion-icon {
+      font-size: 18px;
+    }
+  }
+  
+  .password-container .custom-input {
+    --padding-end: 55px;
   }
 }
 
@@ -334,82 +499,52 @@
   }
 }
 
-// ...existing styles...
-
-.character-counter {
-  position: absolute;
-  bottom: 12px;
-  right: 16px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(0, 0, 0, 0.2);
-  padding: 4px 8px;
-  border-radius: 10px;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  transition: all 0.3s ease;
-  z-index: 5;
-
-  .count-text {
-    display: block;
-  }
-
-  &.near-limit {
-    color: #fbbf24;
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    animation: pulse 2s infinite;
-  }
-
-  &.over-limit {
-    color: #ff6b6b;
-    background: rgba(255, 107, 107, 0.1);
-    border: 1px solid rgba(255, 107, 107, 0.3);
-    animation: shake 0.5s ease-in-out;
+// GLOBAL OVERRIDE PARA TODOS LOS ELEMENTOS DE IONIC
+* {
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
 
-.warning-message {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 12px;
-  color: #fbbf24;
-  margin-top: 6px;
-  margin-left: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  animation: slideInWarning 0.3s ease;
-
-  .warning-icon {
-    font-size: 14px;
-    flex-shrink: 0;
+// Específico para ion-input e ion-textarea
+ion-input, ion-textarea {
+  &:focus,
+  &.ion-focused,
+  &.has-focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 }
 
-.input-group.disabled {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.input-container.disabled {
-  background: rgba(47, 48, 52, 0.2);
-  border-color: rgba(255, 255, 255, 0.05);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-@keyframes slideInWarning {
-  from { 
-    opacity: 0; 
-    transform: translateY(-10px); 
+// Estilos específicos para el elemento input/textarea nativo dentro de ion-input/ion-textarea
+ion-input input,
+ion-textarea textarea {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  
+  &:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
+}
+
+@media (max-width: 360px) {
+  .password-toggle {
+    right: 8px;
+    min-height: 32px;
+    width: 32px;
+    height: 32px;
+    
+    ion-icon {
+      font-size: 16px;
+    }
+  }
+  
+  .password-container .custom-input {
+    --padding-end: 50px;
   }
 }
