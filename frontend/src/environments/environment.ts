@@ -12,7 +12,8 @@ export const environment = {
     messagingSenderId: "334137635326",
     appId: "1:334137635326:web:42100559711b748037d0af"
   },
-  fourSquareApiKey: "fsq3N3pKFyc36I6HJvM39OhLDDnt1iIlGR8+/sLz5K4sN+4="
+  fourSquareApiKey: "fsq3N3pKFyc36I6HJvM39OhLDDnt1iIlGR8+/sLz5K4sN+4=",
+  apiUrl: 'http://localhost:3000/api'
 };
 
 /*

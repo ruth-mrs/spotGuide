@@ -14,5 +14,7 @@
 
   <ion-router-outlet id="main-content"></ion-router-outlet>
 
-  <app-tabs></app-tabs>
+  @if (shouldShowTabs) {
+    <app-tabs></app-tabs>
+  }
 </ion-app>

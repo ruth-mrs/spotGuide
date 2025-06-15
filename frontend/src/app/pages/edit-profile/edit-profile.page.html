@@ -1,0 +1,75 @@
+<ion-content [fullscreen]="true" class="edit-profile-bg">
+  <div class="background-gradient"></div>
+  
+  <div class="form-container">
+    <!-- Header section -->
+    <div class="page-header">
+      <h1 class="page-title">Editar Perfil</h1>
+      <p class="page-subtitle">Actualiza tu información personal</p>
+    </div>
+
+    <!-- Formulario -->
+    <div class="form-card">
+      <!-- Avatar -->
+      <app-avatar-upload
+        label="Foto de perfil"
+        uploadText="Sube o hazte una foto"
+        changeText="Pulsa para cambiar imagen"
+        [(ngModel)]="editProfileData.avatar"
+        name="avatar"
+        (ngModelChange)="onDataChange()"
+        (imageError)="onAvatarError($event)">
+      </app-avatar-upload>
+
+      <!-- Nombre -->
+      <app-custom-input
+        label="Nombre"
+        placeholder="Ingresa tu nombre completo"
+        [required]="true"
+        [hasError]="fieldErrors.name.length > 0"
+        [errorMessage]="fieldErrors.name[0]"
+        [(ngModel)]="editProfileData.name"
+        name="name"
+        (ngModelChange)="onDataChange()"
+        (inputBlur)="validateField('name')">
+      </app-custom-input>
+
+      <!-- Descripción -->
+      <app-custom-input
+        label="Descripción"
+        placeholder="Cuéntanos sobre ti, tus intereses, lugares favoritos..."
+        type="textarea"
+        [optional]="true"
+        [maxLength]="500"
+        [counter]="true"
+        [autoGrow]="true"
+        [rows]="3"
+        [(ngModel)]="editProfileData.description"
+        name="description"
+        (ngModelChange)="onDataChange()"
+        (inputBlur)="validateField('description')">
+      </app-custom-input>
+
+      <!-- Botones de acción -->
+      <div class="action-buttons">
+        <ion-button 
+          expand="block" 
+          class="save-btn"
+          [disabled]="!isFormValid() || !hasChanges || isLoading"
+          (click)="onSaveChanges()">
+          <ion-spinner *ngIf="isLoading" name="crescent" slot="start"></ion-spinner>
+          {{ isLoading ? 'Guardando...' : 'Guardar cambios' }}
+        </ion-button>
+
+        <ion-button 
+          expand="block" 
+          fill="outline" 
+          class="cancel-btn"
+          [disabled]="isLoading"
+          (click)="onCancel()">
+          Cancelar
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>

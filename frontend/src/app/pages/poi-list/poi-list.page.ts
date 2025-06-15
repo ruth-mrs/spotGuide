@@ -365,6 +365,7 @@ export class PoiListPage implements OnInit, OnDestroy {
   onPoiCardClick(poi: POI) {
     console.log('PoiListPage: POI card clickeado (para mapa):', poi.name);  
     
+    // Solo actualizar el mapa, NO navegar a detalles
     this.currentCenter = { lat: poi.latitude, lng: poi.longitude };
     this.updateMapMarkers(poi.id);
     
@@ -375,7 +376,16 @@ export class PoiListPage implements OnInit, OnDestroy {
 
   onViewDetails(poi: POI) {
     console.log('PoiListPage: Ver detalles clickeado:', poi.name);
-    this.router.navigate(['/poi-detail', poi.id]);
+    console.log('PoiListPage: Navegando a:', `/poi/${poi.id}`);
+    
+    this.router.navigateByUrl(`/poi/${poi.id}`, { 
+      skipLocationChange: false,
+      replaceUrl: false 
+    }).then(success => {
+      console.log('PoiListPage: Navegación exitosa:', success);
+    }).catch(error => {
+      console.error('PoiListPage: Error navegando:', error);
+    });
   }
 
   onFavoriteToggle(poi: POI) {
@@ -393,15 +403,25 @@ export class PoiListPage implements OnInit, OnDestroy {
 
   onMapMarkerClick(marker: MapMarker) {
     console.log('PoiListPage: Marcador del mapa clickeado para ver detalles:', marker.title);
+    
     // Buscar el POI correspondiente
     const poi = this.pois.find(p => p.id === marker.id);
     if (poi) {
-      console.log('PoiListPage: Navegando a detalles del POI:', poi.name);
-      this.router.navigate(['/poi-detail', poi.id]);
+      console.log('PoiListPage: Navegando a detalles del POI desde mapa:', poi.name);
+      
+      // Usar navigateByUrl
+      this.router.navigateByUrl(`/poi/${poi.id}`, { 
+        skipLocationChange: false,
+        replaceUrl: false 
+      }).then(success => {
+        console.log('PoiListPage: Navegación desde mapa exitosa:', success);
+      }).catch(error => {
+        console.error('PoiListPage: Error navegando desde mapa:', error);
+      });
     } else {
       console.error('PoiListPage: No se encontró el POI con id:', marker.id);
     }
-  } 
+  }
 
   fitAllPois() {
     if (this.mapComponent && this.filteredPois.length > 0) {
@@ -488,21 +508,5 @@ export class PoiListPage implements OnInit, OnDestroy {
       return `Buscando en área más amplia... (${this.consecutiveEmptyPages}/${this.maxEmptyPages})`;
     }
     return 'Cargando más puntos...';
-  }
-
-  private debugPoisState() {
-    console.log('=== DEBUG POIS STATE ===');
-    console.log('pois.length:', this.pois.length);
-    console.log('Primeros 5 POIs:', this.pois.slice(0, 5).map(p => ({ 
-      id: p.id, 
-      name: p.name, 
-      lat: p.latitude, 
-      lng: p.longitude 
-    })));
-    console.log('filteredPois.length:', this.filteredPois.length);
-    console.log('hasMoreData:', this.hasMoreData);
-    console.log('totalPois:', this.totalPois);
-    console.log('currentPage:', this.currentPage);
-    console.log('======================');
   }
 }

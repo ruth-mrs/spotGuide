@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router, NavigationEnd, RouterLinkActive } from '@angular/router';
 import { IonTabs, IonTabBar, IonTabButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { home, homeOutline, compass, compassOutline, add, addCircle, addCircleOutline, list, person } from 'ionicons/icons';
-import { filter } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-tabs',
@@ -24,10 +26,15 @@ export class TabsComponent implements OnInit {
   isAddActive = false;
   isPoisActive = false;
   isProfileActive = false;
-  isLoggedIn = true;
-  userAvatarUrl = 'https://www.forpasgastronomia.com/FitxersWeb/25473/temporada-de-aguacates.jpg';
+  isLoggedIn = false;
+  userAvatarUrl = 'https://avatar.iran.liara.run/public';
 
-  constructor(private router: Router) {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+
+  private destroy$ = new Subject<void>();
+
+  constructor() {
     addIcons({ 
       home, 
       homeOutline, 
@@ -42,8 +49,29 @@ export class TabsComponent implements OnInit {
   }
 
   ngOnInit() { 
+    // Escuchar cambios de autenticación
+    this.authService.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(isAuth => {
+        this.isLoggedIn = isAuth;
+        if (isAuth) {
+          this.updateUserAvatar();
+        }
+      });
+
+    // Escuchar cambios de usuario para actualizar avatar
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user) {
+          this.userAvatarUrl = user.avatar || 'assets/avatars/default-avatar.png';
+        }
+      });
+
+    // Escuchar cambios de ruta
     this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
+      filter(event => event instanceof NavigationEnd),
+      takeUntil(this.destroy$)
     ).subscribe((event: NavigationEnd) => {
       this.updateActiveStates(event.url);
     });
@@ -52,11 +80,23 @@ export class TabsComponent implements OnInit {
     this.updateActiveStates(this.router.url);
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   private updateActiveStates(url: string) {
     this.isHomeActive = url === '/' || url === '/home';
     this.isRouteActive = url === '/generate-route';
     this.isAddActive = url === '/add-poi';
-    this.isPoisActive = url === '/pois';
-    this.isProfileActive = url === '/profile';
+    this.isPoisActive = url === '/pois' || url.startsWith('/poi/');
+    this.isProfileActive = url === '/profile' || url === '/edit-profile';
+  }
+
+  private updateUserAvatar() {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser && currentUser.avatar) {
+      this.userAvatarUrl = currentUser.avatar;
+    }
   }
 }

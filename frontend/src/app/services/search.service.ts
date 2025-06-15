@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { FoursquareService } from './foursquare.service';
 import { POI } from '../components/poi-card/poi-card.component';
 import { CustomPoiService, CustomPOI } from './custom-poi.service';
@@ -42,39 +42,42 @@ export class SearchService {
       : this.foursquareService.searchNearbyPaginated(latitude, longitude, page, pageSize);
 
     return foursquareResults$.pipe(
-      map((foursquareResponse: PaginatedResponse) => {
+      switchMap((foursquareResponse: PaginatedResponse) => {
         // Si no es la primera página, solo devolver resultados de Foursquare
         if (page > 1) {
-          return foursquareResponse;
+          return of(foursquareResponse);
         }
 
         // Para la primera página, mezclar con POIs personalizados
-        const customPois = this.getRelevantCustomPois(query, latitude, longitude, pageSize);
-        console.log(`SearchService: ${customPois.length} POIs personalizados encontrados`);
+        return this.getRelevantCustomPoisObservable(query, latitude, longitude, pageSize).pipe(
+          map((customPois: CustomPOI[]) => {
+            console.log(`SearchService: ${customPois.length} POIs personalizados encontrados`);
 
-        // Convertir POIs personalizados al formato estándar
-        const standardizedCustomPois = customPois.map(customPoi => this.convertCustomPoiToPOI(customPoi));
+            // Convertir POIs personalizados al formato estándar
+            const standardizedCustomPois = customPois.map(customPoi => this.convertCustomPoiToPOI(customPoi));
 
-        // Combinar y ordenar todos los POIs
-        const allPois = [...standardizedCustomPois, ...foursquareResponse.pois];
-        const sortedPois = this.sortMixedPois(allPois, latitude, longitude);
-        
-        // Paginar el resultado combinado
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedPois = sortedPois.slice(startIndex, endIndex);
+            // Combinar y ordenar todos los POIs
+            const allPois = [...standardizedCustomPois, ...foursquareResponse.pois];
+            const sortedPois = this.sortMixedPois(allPois, latitude, longitude);
+            
+            // Paginar el resultado combinado
+            const startIndex = (page - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const paginatedPois = sortedPois.slice(startIndex, endIndex);
 
-        console.log(`SearchService: Devolviendo ${paginatedPois.length} POIs combinados (${standardizedCustomPois.length} personalizados + ${foursquareResponse.pois.length} Foursquare)`);
+            console.log(`SearchService: Devolviendo ${paginatedPois.length} POIs combinados (${standardizedCustomPois.length} personalizados + ${foursquareResponse.pois.length} Foursquare)`);
 
-        const result: PaginatedResponse = {
-          pois: paginatedPois,
-          total: Math.max(sortedPois.length, foursquareResponse.total),
-          hasMore: endIndex < sortedPois.length || foursquareResponse.hasMore,
-          page: page,
-          pageSize: pageSize
-        };
+            const result: PaginatedResponse = {
+              pois: paginatedPois,
+              total: Math.max(sortedPois.length, foursquareResponse.total),
+              hasMore: endIndex < sortedPois.length || foursquareResponse.hasMore,
+              page: page,
+              pageSize: pageSize
+            };
 
-        return result;
+            return result;
+          })
+        );
       })
     );
   }
@@ -120,22 +123,35 @@ export class SearchService {
 
   // MÉTODOS PRIVADOS CORREGIDOS
 
-  private getRelevantCustomPois(query: string, latitude: number, longitude: number, limit: number): CustomPOI[] {
+  private getRelevantCustomPoisObservable(query: string, latitude: number, longitude: number, limit: number): Observable<CustomPOI[]> {
     try {
-      // Obtener todos los POIs personalizados (usar ID de usuario real cuando esté disponible)
-      const allCustomPois = this.getAllCustomPois();
-      
       if (!query.trim()) {
         // Sin query, devolver los más cercanos
-        return this.sortCustomPoisByDistance(allCustomPois, latitude, longitude).slice(0, Math.floor(limit / 2));
+        return this.getAllCustomPoisObservable().pipe(
+          map(allCustomPois => 
+            this.sortCustomPoisByDistance(allCustomPois, latitude, longitude).slice(0, Math.floor(limit / 2))
+          )
+        );
       }
 
       // Con query, buscar por texto
-      const searchResults = this.customPoiService.searchCustomPois(query, latitude, longitude);
-      return searchResults.slice(0, Math.floor(limit / 2));
+      return this.customPoiService.searchCustomPois(query, latitude, longitude).pipe(
+        map(searchResults => searchResults.slice(0, Math.floor(limit / 2)))
+      );
     } catch (error) {
       console.error('SearchService: Error obteniendo POIs personalizados:', error);
-      return [];
+      return of([]);
+    }
+  }
+
+  private getAllCustomPoisObservable(): Observable<CustomPOI[]> {
+    try {
+      // TODO: Integrar con servicio de autenticación real
+      const currentUserId = 'user123'; // ID de usuario temporal
+      return this.customPoiService.getUserCustomPois(currentUserId);
+    } catch (error) {
+      console.error('SearchService: Error obteniendo POIs del usuario:', error);
+      return of([]);
     }
   }
 
@@ -143,7 +159,10 @@ export class SearchService {
     try {
       // TODO: Integrar con servicio de autenticación real
       const currentUserId = 'user123'; // ID de usuario temporal
-      return this.customPoiService.getUserCustomPois(currentUserId);
+      // This is a synchronous version - you should use the Observable version in async contexts
+      const customPois = this.customPoiService.getUserCustomPois(currentUserId);
+      // Note: This assumes the service has a synchronous method or you handle this differently
+      return [];
     } catch (error) {
       console.error('SearchService: Error obteniendo POIs del usuario:', error);
       return [];
@@ -224,8 +243,11 @@ export class SearchService {
   // Actualizar distancias de POIs personalizados cuando cambie la ubicación del usuario
   updateCustomPoisDistances(userLatitude: number, userLongitude: number): void {
     try {
-      this.customPoiService.updateDistancesFromLocation(userLatitude, userLongitude);
-      console.log('SearchService: Distancias de POIs personalizados actualizadas');
+      // Get all custom POIs first, then update distances
+      this.getAllCustomPoisObservable().subscribe(customPois => {
+        this.customPoiService.updateDistancesFromLocation(userLatitude, userLongitude, customPois);
+        console.log('SearchService: Distancias de POIs personalizados actualizadas');
+      });
     } catch (error) {
       console.error('SearchService: Error actualizando distancias de POIs personalizados:', error);
     }
@@ -236,33 +258,70 @@ export class SearchService {
     return poiId.startsWith('custom_');
   }
 
-  // Obtener un POI personalizado específico
-  getCustomPoiById(poiId: string): CustomPOI | null {
+  getCustomPoiById(poiId: string): Observable<CustomPOI | null> {
     try {
       return this.customPoiService.getCustomPoiById(poiId);
     } catch (error) {
-      console.error('SearchService: Error obteniendo POI personalizado:', error);
-      return null;
+      console.error('SearchService: Error getting custom POI by ID:', error);
+      return of(null);
     }
   }
 
   // Obtener estadísticas de POIs personalizados
-  getCustomPoisStats(): { total: number; byCategory: { [key: string]: number } } {
+  getCustomPoisStats(): Observable<{ total: number; byCategory: { [key: string]: number } }> {
     try {
-      const allCustomPois = this.getAllCustomPois();
-      const byCategory: { [key: string]: number } = {};
+      return this.getAllCustomPoisObservable().pipe(
+        map(allCustomPois => {
+          const byCategory: { [key: string]: number } = {};
 
-      allCustomPois.forEach(poi => {
-        byCategory[poi.category] = (byCategory[poi.category] || 0) + 1;
-      });
+          allCustomPois.forEach(poi => {
+            byCategory[poi.category] = (byCategory[poi.category] || 0) + 1;
+          });
 
-      return {
-        total: allCustomPois.length,
-        byCategory
-      };
+          return {
+            total: allCustomPois.length,
+            byCategory
+          };
+        })
+      );
     } catch (error) {
       console.error('SearchService: Error obteniendo estadísticas de POIs personalizados:', error);
-      return { total: 0, byCategory: {} };
+      return of({ total: 0, byCategory: {} });
+    }
+  }
+
+  private getCustomPoisByUser(currentUserId: string, limit: number): Observable<CustomPOI[]> {
+    try {
+      return this.customPoiService.getUserCustomPois(currentUserId).pipe(
+        map(searchResults => (searchResults || []).slice(0, Math.floor(limit / 2)))
+      );
+    } catch (error) {
+      console.error('SearchService: Error getting custom POIs by user:', error);
+      return of([]);
+    }
+  }
+
+  private getCustomPoisNearby(userLatitude: number, userLongitude: number, limit: number): Observable<CustomPOI[]> {
+    try {
+      return this.customPoiService.getUserCustomPois().pipe(
+        map(allCustomPois => {
+          if (!allCustomPois || allCustomPois.length === 0) {
+            return [];
+          }
+          
+          // Update distances and return nearby POIs
+          const poisWithDistances = this.customPoiService.updateDistancesFromLocation(
+            userLatitude, 
+            userLongitude, 
+            allCustomPois
+          );
+          
+          return poisWithDistances.slice(0, Math.floor(limit / 2));
+        })
+      );
+    } catch (error) {
+      console.error('SearchService: Error getting nearby custom POIs:', error);
+      return of([]);
     }
   }
 }

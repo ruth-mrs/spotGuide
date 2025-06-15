@@ -126,6 +126,21 @@ export class FoursquareService {
     }
   }
 
+  getPoiById(poiId: string): Observable<POI | null> {
+    // Si es un POI de Foursquare, intentar obtenerlo
+    if (poiId && !this.isCustomPoiId(poiId)) {
+      // Implementar lógica para obtener POI de Foursquare por ID
+      // Por ahora retornar null ya que no tenemos API real de Foursquare
+      return of(null);
+    }
+    return of(null);
+  }
+
+  private isCustomPoiId(id: string): boolean {
+    // Los POIs personalizados tienen IDs de MongoDB (24 caracteres hex)
+    return id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
+  }
+
   // Actualizar el método loadAllNearbyPois para más debug:
   private loadAllNearbyPois(
     latitude: number, 
@@ -755,3 +770,5 @@ export class FoursquareService {
     );
   }
 }
+
+export { POI };

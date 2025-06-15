@@ -129,10 +129,17 @@
         <div class="comment-form" *ngIf="isLoggedIn">
           <div class="form-header">
             <ion-avatar class="user-avatar">
-              <img [src]="currentUser.avatar" [alt]="currentUser.name">
+              @if (currentUser) {
+                <img [src]="currentUser.avatar" [alt]="currentUser.name">
+                <div class="user-info">
+                  <span class="user-name">{{ currentUser.name }}</span>
+                </div>
+              }
             </ion-avatar>
             <div class="form-info">
-              <span class="user-name">{{ currentUser.name }}</span>
+              @if (currentUser) {
+                <span class="user-name">{{ currentUser.name }}</span>
+              }
               <div class="rating-selector">
                 <ion-icon 
                   *ngFor="let star of [1,2,3,4,5]"

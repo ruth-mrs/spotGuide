@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.edit-profile-bg {
+  --background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.background-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(26, 26, 46, 0.95) 0%,
+    rgba(22, 33, 62, 0.95) 50%,
+    rgba(15, 52, 96, 0.95) 100%
+  );
+  z-index: -1;
+}
+
+.form-container {
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.page-header {
+  text-align: center;
+  margin: 20px 0 40px 0;
+  animation: fadeInDown 0.8s ease-out;
+  
+  .page-title {
+    font-family: var(--font-family-primary);
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+    margin: 0 0 12px 0;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .page-subtitle {
+    font-family: var(--font-family-primary);
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+.form-card {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 32px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.2),
+    0 8px 20px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: slideInUp 0.7s ease-out;
+  
+  app-custom-input {
+    margin-bottom: 20px;
+  }
+  
+  app-avatar-upload {
+    margin-bottom: 24px;
+  }
+}
+
+.action-buttons {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.save-btn {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: white;
+  --border-radius: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  --box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  font-size: 16px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  
+  &:not(:disabled):hover {
+    --box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    --background: rgba(255, 255, 255, 0.1);
+    --color: rgba(255, 255, 255, 0.5);
+    --box-shadow: none;
+  }
+  
+  ion-spinner {
+    --color: white;
+    margin-right: 8px;
+  }
+}
+
+.cancel-btn {
+  --background: transparent;
+  --color: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --border-radius: 16px;
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+  font-family: var(--font-family-primary);
+  font-weight: 500;
+  font-size: 16px;
+  text-transform: none;
+  
+  &:not(:disabled):hover {
+    --background: rgba(255, 255, 255, 0.05);
+    --border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+// Animaciones
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .form-container {
+    padding: 16px;
+  }
+  
+  .page-header {
+    margin: 16px 0 32px 0;
+    
+    .page-title {
+      font-size: 28px;
+    }
+    
+    .page-subtitle {
+      font-size: 14px;
+    }
+  }
+  
+  .form-card {
+    padding: 24px 20px;
+  }
+}

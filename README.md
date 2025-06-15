@@ -17,6 +17,7 @@
 **[Descripción](#descripción)**<br>
 **[Despliegue del proyecto](#despliegue-del-proyecto)**<br>
 **[Herramientas de desarrollo](#herramientas-de-desarrollo)**<br>
+**[Instrucciones de configuración](#instrucciones-de-configuración)**<br>
 **[License](#license)**<br>
 
 ## Descripción
@@ -27,6 +28,66 @@ En contrucción...
 
 ## Herramientas de desarrollo
 En contrucción...
+
+## Instrucciones de configuración
+
+### Prerrequisitos
+- Node.js (v16 o superior)
+- MongoDB (instancia local o en la nube)
+- npm o yarn
+
+### Configuración del backend
+
+1. Navega al directorio del backend:
+   ```bash
+   cd backend
+   ```
+
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+3. Copia el archivo de entorno:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Actualiza el archivo `.env` con tu configuración:
+   - Establece tu cadena de conexión de MongoDB
+   - Genera un secreto JWT seguro
+   - Configura las URL del frontend
+
+5. Inicia MongoDB (si se ejecuta localmente)
+
+6. Ejecuta la aplicación:
+   ```bash
+   # Modo desarrollo
+   npm run dev
+   
+   # Modo producción
+   npm start
+   
+   # Ejecutar pruebas
+   npm test
+   ```
+
+### Variables de entorno
+
+- `MONGODB_URI`: Cadena de conexión de MongoDB
+- `JWT_SECRET`: Clave secreta para tokens JWT
+- `PORT`: Puerto del servidor (por defecto: 3000)
+- `NODE_ENV`: Entorno (desarrollo/producción/prueba)
+- `FRONTEND_URL_DEV`: URL del frontend en desarrollo
+- `FRONTEND_URL_PROD`: URL del frontend en producción
+
+### Endpoints de la API
+
+- `GET /api/health` - Verificación de estado
+- `POST /api/auth/*` - Rutas de autenticación
+- `GET/POST /api/pois/*` - Rutas de puntos de interés
+- `GET /api/users/*` - Rutas de usuarios
+- `GET /api/search/*` - Rutas de búsqueda
 
 ## License
 

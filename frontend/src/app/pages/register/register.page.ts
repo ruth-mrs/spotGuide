@@ -11,7 +11,8 @@ import { CustomInputComponent } from '../../components/custom-input/custom-input
 import { PasswordValidatorComponent, PasswordChecks } from '../../components/password-validator/password-validator.component';
 import { AvatarUploadComponent } from '../../components/avatar-upload/avatar-upload.component';
 import { ValidationService } from '../../services/validation.service';
-import { ToastService } from '../../services/toast.service'; // Nuevo servicio
+import { ToastService } from '../../services/toast.service';
+import { AuthService } from '../../services/auth.service';
 
 interface RegisterData {
   username: string;
@@ -75,10 +76,17 @@ export class RegisterPage implements OnInit {
     private router: Router,
     private alertController: AlertController,
     private validationService: ValidationService,
-    private toastService: ToastService // Nuevo servicio
+    private toastService: ToastService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
+    // Verificar si ya está logueado
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/pois']);
+      return;
+    }
+
     setTimeout(() => {
       const container = document.querySelector('.register-container');
       container?.classList.add('animate-in');
@@ -160,24 +168,36 @@ export class RegisterPage implements OnInit {
     const loadingToast = await this.toastService.loading('Creando tu cuenta...');
 
     try {
-      await this.simulateRegister();
+      const result = await this.authService.register({
+        username: this.registerData.username,
+        name: this.registerData.name,
+        email: this.registerData.email,
+        password: this.registerData.password,
+        description: this.registerData.description,
+        avatar: this.registerData.avatar
+      }).toPromise();
+
       await loadingToast.dismiss();
-      await this.toastService.success('¡Registro exitoso! Bienvenido a SpotGuide 🎉');
-      
-      // Pequeño delay para mostrar el éxito antes de navegar
-      setTimeout(() => {
-        this.router.navigate(['/home']);
-      }, 1500);
+
+      if (result?.success) {
+        await this.toastService.success('¡Registro exitoso! Bienvenido a SpotGuide 🎉');
+        
+        // Pequeño delay para mostrar el éxito antes de navegar
+        setTimeout(() => {
+          this.router.navigate(['/pois']);
+        }, 1500);
+      } else {
+        await this.toastService.error(result?.message || 'Error al registrarse');
+      }
     } catch (error) {
       await loadingToast.dismiss();
-      await this.toastService.error('Hubo un problema al registrarte. Inténtalo de nuevo.');
-      await this.showAlert('Error', 'Hubo un problema al registrarte. Inténtalo de nuevo.');
+      console.error('Register error:', error);
+      await this.toastService.error('Error de conexión. Verifica tu conexión a internet.');
     } finally {
       this.isLoading = false;
     }
   }
 
-  // Método para manejar errores de avatar
   async onAvatarError(errorMessage: string) {
     await this.toastService.warning(errorMessage);
   }
@@ -192,20 +212,6 @@ export class RegisterPage implements OnInit {
     if (!this.registerData.confirmPassword) missingFields.push('Confirmar Contraseña');
     
     return missingFields;
-  }
-
-  private async simulateRegister(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Simular error ocasional para testing
-        if (Math.random() < 0.1) { // 10% chance de error
-          reject(new Error('Error simulado'));
-        } else {
-          console.log('Registrando usuario:', this.registerData);
-          resolve();
-        }
-      }, 2000);
-    });
   }
 
   private async showAlert(header: string, message: string) {
