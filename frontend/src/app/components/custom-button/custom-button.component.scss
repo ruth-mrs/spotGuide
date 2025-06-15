@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 .custom-button {
   --border-radius: 35px;
   --box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   text-transform: none;
   transition: all 0.3s ease;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-family-primary);
   font-weight: 500;
   position: relative;
   overflow: hidden;
