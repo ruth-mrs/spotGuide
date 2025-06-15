@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 // Eliminar scroll completamente
 ion-content {
@@ -156,7 +155,7 @@ ion-content {
   --border-radius: 25px;
   --padding-top: 16px;
   --padding-bottom: 16px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-family-primary);
   font-size: 17px;
   font-weight: 600;
   margin-top: 20px;
@@ -196,13 +195,13 @@ ion-content {
 }
 
 .register-text {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-family-primary);
   color: rgba(255, 255, 255, 0.8);
   font-size: 15px;
 }
 
 .register-link-text {
-  font-family: 'Montserrat', sans-serif;
+  font-family: var(--font-family-primary);
   color: #667eea;
   font-weight: 600;
   text-decoration: none;
@@ -244,7 +243,7 @@ ion-content {
     
     .input-label {
       color: rgba(255, 255, 255, 0.9) !important;
-      font-family: 'Montserrat', sans-serif !important;
+      font-family: var(--font-family-primary) !important;
       font-size: 13px !important;
       font-weight: 500 !important;
       margin-bottom: 6px !important;
