@@ -17,13 +17,33 @@ console.log('🚀 Iniciando SpotGuide Backend...');
 
 const app = express();
 
-// CORS configuration - MUY IMPORTANTE para el frontend
-app.use(cors({
-  origin: ['http://localhost:8100', 'http://localhost:4200', 'http://127.0.0.1:8100', 'https://ruth-mrs.github.io/spotGuide'],
+const corsOptions = {
+  origin: [
+    'http://localhost:8100',
+    'http://localhost:4200',
+    'http://127.0.0.1:8100',
+    'https://ruth-mrs.github.io', // SIN /spotGuide
+    'https://spotguide.onrender.com'
+  ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma'
+  ],
+  exposedHeaders: ['Authorization'],
+  optionsSuccessStatus: 200, // Para soportar navegadores legacy
+  preflightContinue: false
+};
+
+app.use(cors(corsOptions));
+
+app.options('*', cors(corsOptions));
 
 // Middleware básico
 app.use(logger('dev'));
