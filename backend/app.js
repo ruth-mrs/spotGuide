@@ -62,7 +62,14 @@ try {
   app.use('/api/comments', commentsRoutes);
   app.use('/api/favorites', favoritesRoutes);
   app.use('/api/custom-pois', customPoisRoutes);
-  app.use('/api/routes', routeGeneratorRoutes);
+  
+  if (process.env.GROQ_API_KEY && process.env.NODE_ENV !== 'test') {
+    const routeGeneratorRoutes = require('./app_api/routes/route');
+    app.use('/api/routes', routeGeneratorRoutes);
+    console.log('✅ Rutas con IA habilitadas');
+  } else {
+    console.log('⚠️ Rutas con IA deshabilitadas (GROQ_API_KEY no disponible)');
+  }
 
   console.log('✅ Rutas API cargadas correctamente');
 } catch (error) {

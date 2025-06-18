@@ -2,10 +2,17 @@ const { z } = require('zod');
 const Groq = require('groq-sdk');
 require('dotenv').config();
 
-// Inicializar Groq
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+let groq = null;
+
+try {
+  if (process.env.GROQ_API_KEY && process.env.NODE_ENV !== 'test') {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    });
+  }
+} catch (error) {
+  console.warn('⚠️ GROQ no inicializado:', error.message);
+}
 
 // Schema de validación para la respuesta de la IA
 const RouteSchema = z.object({

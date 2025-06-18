@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface RouteGenerationRequest {
   pois: Array<{
@@ -55,7 +56,7 @@ export interface RouteGenerationResponse {
   providedIn: 'root'
 })
 export class RouteGeneratorService {
-  private readonly BACKEND_URL = 'http://localhost:3000'; // Puerto del servicio de rutas
+  private readonly BACKEND_URL = environment.apiUrl; 
   private authService = inject(AuthService);
   private http = inject(HttpClient);
 
@@ -135,7 +136,7 @@ export class RouteGeneratorService {
         .subscribe({
           next: (response) => {
             if (response.success) {
-              this.loadUserRoutes(); // Recargar rutas
+              this.loadUserRoutes(); 
             }
             observer.next(response);
             observer.complete();

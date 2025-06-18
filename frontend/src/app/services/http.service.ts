@@ -4,6 +4,8 @@ import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { TokenService } from './token.service';
 import { FavoritePoi } from './favorites.service';
+import { environment } from 'src/environments/environment';
+
 
 export interface User {
   id: string;
@@ -44,7 +46,7 @@ export class HttpService {
   get<T>(arg0: string) {
     throw new Error('Method not implemented.');
   }
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = environment.apiUrl; 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
