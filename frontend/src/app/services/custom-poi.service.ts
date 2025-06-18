@@ -1,7 +1,10 @@
-import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, from } from 'rxjs';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Geolocation } from '@capacitor/geolocation';
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
+import { HttpService } from './http.service';
+import { AuthService } from './auth.service';
+import { catchError, map } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 export interface CustomPOI {
   id: string;
@@ -17,161 +20,129 @@ export interface CustomPOI {
   distance: string;
   estimatedTime: string;
   isFavorite: boolean;
-  // Datos específicos de POI personalizado
   userId: string;
   userName: string;
   createdAt: Date;
-  createdFromLocation: {
-    latitude: number;
-    longitude: number;
-    accuracy?: number;
-  };
   isCustom: true;
-  // NUEVOS CAMPOS PARA GESTIÓN COMPARTIDA
-  isPublic: boolean; // Indica si es visible para todos
-  totalFavorites: number; // Contador global de favoritos
-  favoritedBy: string[]; // IDs de usuarios que lo marcaron como favorito
+  isPublic: boolean;
+  totalFavorites: number;
+  canEdit?: boolean;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class CustomPoiService {
-  private readonly STORAGE_KEY = 'spotguide_custom_pois_shared'; // CAMBIAR NOMBRE DE CLAVE
-  private readonly USER_FAVORITES_KEY = 'spotguide_user_favorites'; // Nueva clave para favoritos por usuario
-  private customPois: CustomPOI[] = [];
-  private customPoisSubject = new BehaviorSubject<CustomPOI[]>([]);
-  public customPois$ = this.customPoisSubject.asObservable();
+  constructor(
+    private httpService: HttpService,
+    private authService: AuthService,
+    private http: HttpClient
+  ) {}
 
-  // Simulación de usuario actual (integrar con servicio de autenticación real)
-  private currentUserId = 'user123'; // TODO: Obtener desde servicio de auth
-
-  constructor() {
-    this.loadFromStorage();
+  // ✅ CORREGIR: Obtener POIs públicos del backend
+  getPublicCustomPois(): Observable<CustomPOI[]> {
+    return this.http.get<any>(`${environment.apiUrl}/custom-pois/public`).pipe(
+      map(response => {
+        console.log('CustomPoiService: POIs públicos del backend:', response);
+        
+        // El backend devuelve { success: true, pois: [...] } o directamente [...]
+        const pois = response.pois || response;
+        
+        return pois.map((poi: any) => ({
+          id: poi.id,
+          name: poi.name,
+          description: poi.description,
+          category: poi.category,
+          image: poi.image || '',
+          imageType: poi.imageType || 'url',
+          latitude: poi.latitude,
+          longitude: poi.longitude,
+          rating: poi.rating || 0,
+          reviewCount: poi.reviewCount || 0,
+          distance: poi.distance || '0 km',
+          estimatedTime: poi.estimatedTime || '0 min',
+          isFavorite: poi.isFavorite || false,
+          userId: poi.userId,
+          userName: poi.userName,
+          createdAt: new Date(poi.createdAt),
+          isCustom: true as const,
+          isPublic: poi.isPublic !== false,
+          totalFavorites: poi.totalFavorites || 0
+        }));
+      }),
+      catchError(error => {
+        console.error('CustomPoiService: Error obteniendo POIs públicos:', error);
+        return of([]);
+      })
+    );
   }
 
-  // NUEVO: Establecer usuario actual (para cuando se integre la autenticación)
-  setCurrentUser(userId: string): void {
-    this.currentUserId = userId;
-    this.loadFromStorage(); // Recargar para actualizar favoritos del usuario actual
-  }
-
-  // Obtener POIs personalizados PÚBLICOS (visibles para todos)
-  getCustomPois(): Observable<CustomPOI[]> {
-    return this.customPoisSubject.asObservable();
-  }
-
-  // Obtener todos los POIs personalizados públicos (sincrónico)
-  getAllCustomPois(): CustomPOI[] {
-    return this.customPois.filter(poi => poi.isPublic);
-  }
-
-  // Obtener POI personalizado por ID (público)
-  getCustomPoiById(id: string): CustomPOI | null {
-    const poi = this.customPois.find(poi => poi.id === id);
-    return (poi && poi.isPublic) ? poi : null;
-  }
-
-  // NUEVO: Verificar si el usuario actual puede editar/eliminar un POI
-  canUserEditPoi(poiId: string): boolean {
-    const poi = this.customPois.find(p => p.id === poiId);
-    return poi ? poi.userId === this.currentUserId : false;
-  }
-
-  // NUEVO: Verificar si el usuario actual es el creador del POI
-  isPoiCreatedByCurrentUser(poiId: string): boolean {
-    return this.canUserEditPoi(poiId);
-  }
-
-  // Tomar foto con la cámara
-  async takePicture(): Promise<string> {
+  // ✅ CORREGIR: Obtener POIs del usuario (local storage o backend)
+  private getUserLocalPois(): CustomPOI[] {
+    // Si tienes POIs en localStorage, los obtienes aquí
+    // Si no, devuelves array vacío
     try {
-      const image = await Camera.getPhoto({
-        quality: 80,
-        allowEditing: true,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-        width: 800,
-        height: 600,
-        correctOrientation: true
-      });
-
-      if (image.dataUrl) {
-        console.log('CustomPoiService: Foto tomada exitosamente');
-        return image.dataUrl;
-      } else {
-        throw new Error('No se pudo obtener la imagen');
+      const stored = localStorage.getItem('customPois');
+      if (stored) {
+        return JSON.parse(stored);
       }
     } catch (error) {
-      console.error('CustomPoiService: Error tomando foto:', error);
-      throw error;
+      console.error('Error cargando POIs locales:', error);
     }
+    return [];
   }
 
-  // Obtener ubicación actual
-  async getCurrentPosition(): Promise<{ latitude: number; longitude: number; accuracy?: number }> {
-    try {
-      const position = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000
-      });
-
-      const location = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy
-      };
-
-      console.log('CustomPoiService: Ubicación obtenida:', location);
-      return location;
-    } catch (error) {
-      console.error('CustomPoiService: Error obteniendo ubicación:', error);
-      // Fallback a ubicación por defecto (Almería)
-      return {
-        latitude: 36.8377,
-        longitude: -2.4585,
-        accuracy: undefined
-      };
-    }
+  // ✅ CORREGIR: Combinar POIs locales + backend
+  getAllCustomPois(): Observable<CustomPOI[]> {
+    return forkJoin([
+      of(this.getUserLocalPois()), // ✅ POIs locales (array)
+      this.getPublicCustomPois()   // ✅ POIs del backend (Observable)
+    ]).pipe(
+      map(([localPois, backendPois]) => {
+        console.log(`CustomPoiService: Combinando ${localPois.length} locales + ${backendPois.length} backend`);
+        
+        // Evitar duplicados usando ID
+        const seenIds = new Set<string>();
+        const combinedPois: CustomPOI[] = [];
+        
+        // ✅ Primero los locales (prioridad)
+        localPois.forEach(poi => {
+          if (!seenIds.has(poi.id)) {
+            seenIds.add(poi.id);
+            combinedPois.push(poi);
+          }
+        });
+        
+        // ✅ Luego los del backend
+        backendPois.forEach(poi => {
+          if (!seenIds.has(poi.id)) {
+            seenIds.add(poi.id);
+            combinedPois.push(poi);
+          }
+        });
+        
+        console.log(`CustomPoiService: ${combinedPois.length} POIs únicos combinados`);
+        return combinedPois;
+      })
+    );
   }
 
-  // Calcular distancia entre dos puntos
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 6371; // Radio de la Tierra en km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+  // ✅ ALIAS para compatibilidad
+  getCustomPois(): Observable<CustomPOI[]> {
+    return this.getAllCustomPois();
   }
 
-  // Formatear distancia
-  private formatDistance(distanceKm: number): string {
-    if (distanceKm < 1) {
-      return `${Math.round(distanceKm * 1000)} m`;
-    } else {
-      return `${distanceKm.toFixed(1)} km`;
-    }
+  // Obtener POI por ID
+  getCustomPoiById(id: string): Observable<CustomPOI | null> {
+    return this.httpService.getCustomPoiById(id).pipe(
+      map(poi => poi ? this.formatCustomPoi(poi) : null),
+      catchError(error => {
+        console.error('CustomPoiService: Error obteniendo POI:', error);
+        return of(null);
+      })
+    );
   }
 
-  // Calcular tiempo estimado
-  private calculateEstimatedTime(distanceKm: number): string {
-    const walkingSpeedKmh = 4; // 4 km/h velocidad promedio caminando
-    const timeHours = distanceKm / walkingSpeedKmh;
-    
-    if (timeHours < 1) {
-      const minutes = Math.round(timeHours * 60);
-      return `${minutes} min andando`;
-    } else {
-      const hours = Math.floor(timeHours);
-      const minutes = Math.round((timeHours - hours) * 60);
-      return minutes > 0 ? `${hours}h ${minutes}min andando` : `${hours}h andando`;
-    }
-  }
-
-  // Añadir POI personalizado PÚBLICO
   async addCustomPoi(
     name: string,
     description: string,
@@ -184,368 +155,274 @@ export class CustomPoiService {
     userName: string,
     currentUserLocation?: { latitude: number; longitude: number }
   ): Promise<CustomPOI> {
-    try {
-      // Obtener ubicación actual si no se proporciona
-      const createdFromLocation = currentUserLocation || await this.getCurrentPosition();
+    const poiData = {
+      name: name.trim(),
+      description: description.trim(),
+      category,
+      image,
+      imageType,
+      latitude,
+      longitude,
+      createdFromLocation: currentUserLocation
+    };
 
-      // Calcular distancia desde la ubicación actual
-      const distanceKm = this.calculateDistance(
-        createdFromLocation.latitude,
-        createdFromLocation.longitude,
-        latitude,
-        longitude
-      );
+    console.log('CustomPoiService: Creando POI con datos:', poiData);
 
-      const customPoi: CustomPOI = {
-        id: `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: name.trim(),
-        description: description.trim(),
-        category,
-        image,
-        imageType,
-        latitude,
-        longitude,
-        rating: 0,
-        reviewCount: 0,
-        distance: this.formatDistance(distanceKm),
-        estimatedTime: this.calculateEstimatedTime(distanceKm),
-        isFavorite: false, // Se calculará dinámicamente basado en favoritedBy
-        userId,
-        userName,
-        createdAt: new Date(),
-        createdFromLocation,
-        isCustom: true,
-        // NUEVOS CAMPOS
-        isPublic: true, // Por defecto, todos los POIs son públicos
-        totalFavorites: 0,
-        favoritedBy: []
-      };
-
-      // Añadir al array
-      this.customPois.unshift(customPoi);
-      
-      // Guardar en storage
-      this.saveToStorage();
-      
-      // Actualizar favoritos del usuario actual
-      this.updateUserFavoriteStatus();
-      
-      // Emitir cambios
-      this.customPoisSubject.next([...this.customPois]);
-
-      console.log(`CustomPoiService: POI personalizado público "${name}" añadido exitosamente`);
-      return customPoi;
-    } catch (error) {
-      console.error('CustomPoiService: Error añadiendo POI personalizado:', error);
-      throw error;
-    }
-  }
-
-  // Actualizar distancias desde una nueva ubicación
-  updateDistancesFromLocation(userLatitude: number, userLongitude: number): void {
-    let updated = false;
-
-    this.customPois = this.customPois.map(poi => {
-      const distanceKm = this.calculateDistance(userLatitude, userLongitude, poi.latitude, poi.longitude);
-      const newDistance = this.formatDistance(distanceKm);
-      const newEstimatedTime = this.calculateEstimatedTime(distanceKm);
-
-      if (poi.distance !== newDistance) {
-        updated = true;
-        return {
-          ...poi,
-          distance: newDistance,
-          estimatedTime: newEstimatedTime
-        };
-      }
-      return poi;
-    });
-
-    if (updated) {
-      this.saveToStorage();
-      this.customPoisSubject.next([...this.customPois]);
-      console.log('CustomPoiService: Distancias actualizadas para POIs personalizados');
-    }
-  }
-
-  // MODIFICADO: Eliminar POI personalizado (solo el creador)
-  deleteCustomPoi(poiId: string, userId?: string): boolean {
-    const userIdToCheck = userId || this.currentUserId;
-    const index = this.customPois.findIndex(poi => poi.id === poiId && poi.userId === userIdToCheck);
-    
-    if (index > -1) {
-      const deletedPoi = this.customPois.splice(index, 1)[0];
-      
-      // Limpiar de favoritos de todos los usuarios
-      this.removePoiFromAllUserFavorites(poiId);
-      
-      this.saveToStorage();
-      this.updateUserFavoriteStatus();
-      this.customPoisSubject.next([...this.customPois]);
-      
-      console.log(`CustomPoiService: POI personalizado "${deletedPoi.name}" eliminado por su creador`);
-      return true;
-    }
-    
-    console.warn(`CustomPoiService: No se pudo eliminar POI ${poiId}. Solo el creador puede eliminarlo.`);
-    return false;
-  }
-
-  // MODIFICADO: Actualizar POI personalizado (solo el creador)
-  updateCustomPoi(
-    poiId: string, 
-    updates: Partial<Pick<CustomPOI, 'name' | 'description' | 'category' | 'image' | 'imageType' | 'latitude' | 'longitude'>>,
-    userId?: string
-  ): boolean {
-    const userIdToCheck = userId || this.currentUserId;
-    const index = this.customPois.findIndex(poi => poi.id === poiId && poi.userId === userIdToCheck);
-    
-    if (index > -1) {
-      this.customPois[index] = { ...this.customPois[index], ...updates };
-      this.saveToStorage();
-      this.updateUserFavoriteStatus();
-      this.customPoisSubject.next([...this.customPois]);
-      console.log(`CustomPoiService: POI personalizado "${this.customPois[index].name}" actualizado por su creador`);
-      return true;
-    }
-    
-    console.warn(`CustomPoiService: No se pudo actualizar POI ${poiId}. Solo el creador puede editarlo.`);
-    return false;
-  }
-
-  // MODIFICADO: Obtener POIs del usuario (solo los creados por él)
-  getUserCustomPois(userId: string): CustomPOI[] {
-    return this.customPois.filter(poi => poi.userId === userId && poi.isPublic);
-  }
-
-  // Buscar POIs personalizados públicos por texto
-  searchCustomPois(query: string, userLatitude?: number, userLongitude?: number): CustomPOI[] {
-    const normalizedQuery = query.toLowerCase().trim();
-    
-    let results = this.customPois.filter(poi => 
-      poi.isPublic && (
-        poi.name.toLowerCase().includes(normalizedQuery) ||
-        poi.description.toLowerCase().includes(normalizedQuery) ||
-        poi.category.toLowerCase().includes(normalizedQuery)
-      )
-    );
-
-    // Ordenar por distancia si se proporciona ubicación del usuario
-    if (userLatitude && userLongitude) {
-      results.sort((a, b) => {
-        const distanceA = this.calculateDistance(userLatitude, userLongitude, a.latitude, a.longitude);
-        const distanceB = this.calculateDistance(userLatitude, userLongitude, b.latitude, b.longitude);
-        return distanceA - distanceB;
+    return new Promise((resolve, reject) => {
+      this.httpService.createCustomPoi(poiData).subscribe({
+        next: (response) => {
+          if (response.success && response.poi) {
+            const customPoi = this.formatCustomPoi(response.poi);
+            console.log('CustomPoiService: POI creado exitosamente:', customPoi.name);
+            resolve(customPoi);
+          } else {
+            reject(new Error(response.message || 'Error creando POI'));
+          }
+        },
+        error: (error) => {
+          console.error('CustomPoiService: Error creando POI:', error);
+          reject(new Error(error.message || 'Error de conexión al crear POI'));
+        }
       });
+    });
+  }
+
+  // Obtener POIs del usuario actual
+  getUserCustomPois(userId?: string): Observable<CustomPOI[]> {
+    if (!this.authService.isLoggedIn()) {
+      return of([]);
     }
 
-    return results;
+    return this.httpService.getUserCustomPois().pipe(
+      map(pois => pois.map(poi => this.formatCustomPoi(poi))),
+      catchError(error => {
+        console.error('CustomPoiService: Error obteniendo POIs del usuario:', error);
+        return of([]);
+      })
+    );
+  }
+
+  // Actualizar POI
+  updateCustomPoi(id: string, updateData: Partial<CustomPOI>): Observable<{ success: boolean; message: string }> {
+    return this.httpService.updateCustomPoi(id, updateData).pipe(
+      map(response => ({
+        success: response.success,
+        message: response.message
+      })),
+      catchError(error => {
+        console.error('CustomPoiService: Error actualizando POI:', error);
+        return of({
+          success: false,
+          message: error.message || 'Error actualizando POI'
+        });
+      })
+    );
+  }
+
+  // Eliminar POI
+  deleteCustomPoi(id: string): Observable<{ success: boolean; message: string }> {
+    return this.httpService.deleteCustomPoi(id).pipe(
+      map(response => ({
+        success: response.success,
+        message: response.message
+      })),
+      catchError(error => {
+        console.error('CustomPoiService: Error eliminando POI:', error);
+        return of({
+          success: false,
+          message: error.message || 'Error eliminando POI'
+        });
+      })
+    );
+  }
+
+  // ✅ CORREGIR: Búsqueda de POIs personalizados
+  searchCustomPois(query: string, userLatitude?: number, userLongitude?: number): Observable<CustomPOI[]> {
+    return this.getAllCustomPois().pipe(
+      map(allPois => {
+        const normalizedQuery = query.toLowerCase().trim();
+        
+        let results = allPois.filter(poi => 
+          poi.isPublic && (
+            poi.name.toLowerCase().includes(normalizedQuery) ||
+            poi.description.toLowerCase().includes(normalizedQuery) ||
+            poi.category.toLowerCase().includes(normalizedQuery)
+          )
+        );
+
+        // Ordenar por distancia si se proporciona ubicación del usuario
+        if (userLatitude && userLongitude) {
+          results.sort((a, b) => {
+            const distanceA = this.calculateDistance(userLatitude, userLongitude, a.latitude, a.longitude);
+            const distanceB = this.calculateDistance(userLatitude, userLongitude, b.latitude, b.longitude);
+            return distanceA - distanceB;
+          });
+        }
+
+        return results;
+      })
+    );
+  }
+
+  // Actualizar distancias desde ubicación
+  updateDistancesFromLocation(userLatitude: number, userLongitude: number, pois: CustomPOI[]): CustomPOI[] {
+    return pois.map(poi => {
+      const distance = this.calculateDistance(userLatitude, userLongitude, poi.latitude, poi.longitude);
+      const estimatedTime = this.calculateEstimatedTime(distance);
+      
+      return {
+        ...poi,
+        distance: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`,
+        estimatedTime: `${estimatedTime} min`
+      };
+    });
+  }
+
+  // Obtener posición actual
+  async getCurrentPosition(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalización no soportada'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        },
+        (error) => {
+          reject(new Error(`Error obteniendo ubicación: ${error.message}`));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    });
+  }
+
+  // Tomar foto
+  async takePicture(): Promise<string> {
+    // Esta es una implementación simple. En una app real usarías Capacitor Camera
+    return new Promise((resolve, reject) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      
+      input.onchange = (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve(reader.result as string);
+          };
+          reader.onerror = () => {
+            reject(new Error('Error leyendo la imagen'));
+          };
+          reader.readAsDataURL(file);
+        } else {
+          reject(new Error('No se seleccionó ninguna imagen'));
+        }
+      };
+      
+      input.click();
+    });
   }
 
   // Validar URL de imagen
   isValidImageUrl(url: string): boolean {
     try {
-      const validUrl = new URL(url);
-      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-      const hasValidExtension = validExtensions.some(ext => 
-        validUrl.pathname.toLowerCase().includes(ext)
-      );
-      
-      return validUrl.protocol === 'http:' || validUrl.protocol === 'https:' || hasValidExtension;
+      new URL(url);
+      return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
     } catch {
       return false;
     }
   }
 
-  // MODIFICADO: Toggle favorito para cualquier usuario
-  toggleFavorite(poiId: string, userId?: string): boolean {
-    try {
-      const userIdToCheck = userId || this.currentUserId;
-      const poiIndex = this.customPois.findIndex(poi => poi.id === poiId);
-      
-      if (poiIndex === -1) {
-        console.error('CustomPoiService: POI no encontrado para toggle favorite:', poiId);
-        return false;
-      }
-
-      const poi = this.customPois[poiIndex];
-      const userFavoriteIndex = poi.favoritedBy.indexOf(userIdToCheck);
-
-      if (userFavoriteIndex > -1) {
-        // Remover de favoritos
-        poi.favoritedBy.splice(userFavoriteIndex, 1);
-        poi.totalFavorites = Math.max(0, poi.totalFavorites - 1);
-        console.log(`CustomPoiService: ${userIdToCheck} removió "${poi.name}" de favoritos`);
-      } else {
-        // Añadir a favoritos
-        poi.favoritedBy.push(userIdToCheck);
-        poi.totalFavorites = poi.favoritedBy.length;
-        console.log(`CustomPoiService: ${userIdToCheck} añadió "${poi.name}" a favoritos`);
-      }
-
-      // Actualizar estado isFavorite para el usuario actual
-      poi.isFavorite = poi.favoritedBy.includes(this.currentUserId);
-
-      // Guardar cambios
-      this.saveToStorage();
-      this.saveUserFavorites();
-      
-      // Emitir cambios
-      this.customPoisSubject.next([...this.customPois]);
-
-      return true;
-
-    } catch (error) {
-      console.error('CustomPoiService: Error toggling favorite:', error);
-      return false;
-    }
-  }
-
-  // NUEVO: Obtener estadísticas de un POI
-  getPoiStats(poiId: string): { totalFavorites: number; isFavorite: boolean; canEdit: boolean } | null {
-    const poi = this.customPois.find(p => p.id === poiId);
+  // Formatear POI desde API
+  private formatCustomPoi(poi: any): CustomPOI {
+    const currentUser = this.authService.getCurrentUser();
     
-    if (!poi || !poi.isPublic) {
-      return null;
-    }
-
     return {
-      totalFavorites: poi.totalFavorites,
-      isFavorite: poi.favoritedBy.includes(this.currentUserId),
-      canEdit: poi.userId === this.currentUserId
+      id: poi.id || poi._id,
+      name: poi.name,
+      description: poi.description,
+      category: poi.category,
+      image: poi.image,
+      imageType: poi.imageType || 'url',
+      latitude: poi.latitude,
+      longitude: poi.longitude,
+      rating: poi.rating || 0,
+      reviewCount: poi.reviewCount || 0,
+      distance: poi.distance || '0 km',
+      estimatedTime: poi.estimatedTime || '0 min',
+      isFavorite: poi.isFavorite || false,
+      userId: poi.userId,
+      userName: poi.userName,
+      createdAt: new Date(poi.createdAt),
+      isCustom: true,
+      isPublic: poi.isPublic !== false,
+      totalFavorites: poi.totalFavorites || 0,
+      canEdit: currentUser ? poi.userId === currentUser.id : false
     };
   }
 
-  // NUEVO: Obtener POIs más populares (por número de favoritos)
-  getPopularCustomPois(limit: number = 10): CustomPOI[] {
-    return this.customPois
-      .filter(poi => poi.isPublic)
-      .sort((a, b) => b.totalFavorites - a.totalFavorites)
-      .slice(0, limit);
+  // Calcular distancia entre dos puntos
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Radio de la Tierra en kilómetros
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 
-  // NUEVO: Obtener POIs favoritos del usuario actual
-  getUserFavoriteCustomPois(): CustomPOI[] {
-    return this.customPois.filter(poi => 
-      poi.isPublic && poi.favoritedBy.includes(this.currentUserId)
-    );
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI/180);
   }
 
-  private loadFromStorage(): void {
-    try {
-      const customPoisData = localStorage.getItem(this.STORAGE_KEY);
-      
-      if (customPoisData) {
-        const parsedData = JSON.parse(customPoisData);
-        this.customPois = parsedData.map((poi: any) => ({
-          ...poi,
-          createdAt: new Date(poi.createdAt),
-          // Asegurar que los nuevos campos existan
-          isPublic: poi.isPublic !== undefined ? poi.isPublic : true,
-          totalFavorites: poi.totalFavorites || 0,
-          favoritedBy: poi.favoritedBy || []
-        }));
-        
-        console.log(`CustomPoiService: Cargados ${this.customPois.length} POIs personalizados compartidos desde storage`);
-        
-        // Actualizar estado de favoritos para el usuario actual
-        this.updateUserFavoriteStatus();
-        this.customPoisSubject.next([...this.customPois]);
-      }
-    } catch (error) {
-      console.error('CustomPoiService: Error cargando POIs personalizados desde storage:', error);
-      this.customPois = [];
-    }
+  private calculateEstimatedTime(distanceKm: number): number {
+    // Asumiendo velocidad promedio de caminata: 5 km/h
+    const walkingSpeedKmh = 5;
+    const timeHours = distanceKm / walkingSpeedKmh;
+    return Math.round(timeHours * 60); // Convertir a minutos
   }
 
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.customPois));
-      console.log(`CustomPoiService: ${this.customPois.length} POIs personalizados compartidos guardados en storage`);
-    } catch (error) {
-      console.error('CustomPoiService: Error guardando POIs personalizados en storage:', error);
-    }
-  }
-
-  // NUEVO: Actualizar estado de favoritos para el usuario actual
-  private updateUserFavoriteStatus(): void {
-    this.customPois.forEach(poi => {
-      poi.isFavorite = poi.favoritedBy.includes(this.currentUserId);
-    });
-  }
-
-  // NUEVO: Guardar favoritos del usuario actual por separado (para backup)
-  private saveUserFavorites(): void {
-    try {
-      const userFavorites = this.customPois
-        .filter(poi => poi.favoritedBy.includes(this.currentUserId))
-        .map(poi => poi.id);
-      
-      const allUserFavorites = this.getUserFavoritesFromStorage();
-      allUserFavorites[this.currentUserId] = userFavorites;
-      
-      localStorage.setItem(this.USER_FAVORITES_KEY, JSON.stringify(allUserFavorites));
-    } catch (error) {
-      console.error('CustomPoiService: Error guardando favoritos del usuario:', error);
-    }
-  }
-
-  // NUEVO: Obtener favoritos por usuario desde storage
-  private getUserFavoritesFromStorage(): { [userId: string]: string[] } {
-    try {
-      const favoritesData = localStorage.getItem(this.USER_FAVORITES_KEY);
-      return favoritesData ? JSON.parse(favoritesData) : {};
-    } catch (error) {
-      console.error('CustomPoiService: Error cargando favoritos de usuarios:', error);
-      return {};
-    }
-  }
-
-  // NUEVO: Remover POI de favoritos de todos los usuarios
-  private removePoiFromAllUserFavorites(poiId: string): void {
-    try {
-      const allUserFavorites = this.getUserFavoritesFromStorage();
-      
-      Object.keys(allUserFavorites).forEach(userId => {
-        allUserFavorites[userId] = allUserFavorites[userId].filter(id => id !== poiId);
-      });
-      
-      localStorage.setItem(this.USER_FAVORITES_KEY, JSON.stringify(allUserFavorites));
-    } catch (error) {
-      console.error('CustomPoiService: Error removiendo POI de favoritos de usuarios:', error);
-    }
-  }
-
-  // Limpiar todos los POIs personalizados (para desarrollo/testing)
-  clearAllCustomPois(): void {
-    this.customPois = [];
-    this.saveToStorage();
-    localStorage.removeItem(this.USER_FAVORITES_KEY);
-    this.customPoisSubject.next([]);
-    console.log('CustomPoiService: Todos los POIs personalizados y favoritos eliminados');
-  }
-
-  // NUEVO: Obtener estadísticas generales
-  getGeneralStats(): {
+  // Obtener estadísticas generales
+  getGeneralStats(): Observable<{
     totalCustomPois: number;
     totalPublicPois: number;
     userCreatedPois: number;
     userFavoritePois: number;
-    mostPopularPoi?: CustomPOI;
-  } {
-    const publicPois = this.customPois.filter(poi => poi.isPublic);
-    const userCreatedPois = this.customPois.filter(poi => poi.userId === this.currentUserId && poi.isPublic);
-    const userFavoritePois = this.getUserFavoriteCustomPois();
-    const mostPopularPoi = publicPois.reduce((prev, current) => 
-      (prev.totalFavorites > current.totalFavorites) ? prev : current, publicPois[0]
-    );
+  }> {
+    if (!this.authService.isLoggedIn()) {
+      return of({
+        totalCustomPois: 0,
+        totalPublicPois: 0,
+        userCreatedPois: 0,
+        userFavoritePois: 0
+      });
+    }
 
-    return {
-      totalCustomPois: this.customPois.length,
-      totalPublicPois: publicPois.length,
-      userCreatedPois: userCreatedPois.length,
-      userFavoritePois: userFavoritePois.length,
-      mostPopularPoi
-    };
+    // Usar los datos ya cargados para calcular estadísticas
+    return this.getUserCustomPois().pipe(
+      map(userPois => {
+        return {
+          totalCustomPois: userPois.length,
+          totalPublicPois: userPois.length,
+          userCreatedPois: userPois.length,
+          userFavoritePois: 0 // Se calculará desde FavoritesService
+        };
+      })
+    );
   }
 }

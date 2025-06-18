@@ -1,13 +1,328 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>route-generator</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">route-generator</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Segmento de navegación -->
+  <ion-segment [(ngModel)]="currentSegment" (ionChange)="onSegmentChange($event)">
+    <ion-segment-button value="select">
+      <ion-label>Seleccionar</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="configure">
+      <ion-label>Configurar</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="saved">
+      <ion-label>Guardadas</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Pestaña: Seleccionar POIs -->
+  <div *ngIf="currentSegment === 'select'" class="select-container">
+    <!-- Header con información -->
+    <div class="selection-header">
+      <h2>Elige los puntos a visitar</h2>
+      <p *ngIf="selectedPois.length === 0">Selecciona los lugares que quieres incluir en tu ruta</p>
+      <p *ngIf="selectedPois.length > 0" class="selected-count">
+        <strong>{{selectedPois.length}} puntos seleccionados</strong>
+      </p>
+    </div>
+
+    <!-- Mapa mostrando POIs disponibles -->
+    <div class="map-section" *ngIf="!isLoadingPois && allPois.length > 0">
+      <app-map
+        [center]="{ lat: 36.8377, lng: -2.4585 }"
+        [zoom]="12"
+        [markers]="getAllPoisAsMarkers()"
+        height="300px"
+        (markerClick)="onMapMarkerClick($event)">
+      </app-map>
+    </div>
+
+    <!-- Loading POIs -->
+    <div *ngIf="isLoadingPois" class="loading-container">
+      <ion-spinner name="dots"></ion-spinner>
+      <p>Cargando puntos disponibles...</p>
+    </div>
+
+    <!-- Lista de POIs disponibles -->
+    <div class="pois-list-container" *ngIf="!isLoadingPois">
+      <ion-list class="pois-list">
+        <ion-item 
+          *ngFor="let poi of allPois" 
+          [class.selected-poi]="poi.selected"
+          (click)="togglePoi(poi)">
+          
+          <ion-checkbox 
+            slot="start" 
+            [(ngModel)]="poi.selected" 
+            (ionChange)="togglePoi(poi)">
+          </ion-checkbox>
+          
+          <div class="poi-content">
+            <div class="poi-image">
+              <img [src]="poi.image || 'assets/images/default-poi.jpg'" 
+                   [alt]="poi.name"
+                   (error)="onImageError($event)">
+              <div class="poi-category">{{getCategoryIcon(poi.category)}}</div>
+            </div>
+            
+            <div class="poi-info">
+              <h3>{{poi.name}}</h3>
+              <p>{{poi.description}}</p>
+              <div class="poi-meta">
+                <ion-chip size="small" [color]="getSourceColor(poi.source)">
+                  {{getSourceLabel(poi.source)}}
+                </ion-chip>
+                <span class="poi-distance" *ngIf="poi.distance">
+                  {{poi.distance}}
+                </span>
+              </div>
+            </div>
+            
+            <div class="poi-actions" slot="end">
+              <ion-icon 
+                [name]="poi.selected ? 'checkmark-circle' : 'add-circle-outline'"
+                [color]="poi.selected ? 'success' : 'medium'">
+              </ion-icon>
+            </div>
+          </div>
+        </ion-item>
+      </ion-list>
+
+      <!-- Empty state -->
+      <div *ngIf="allPois.length === 0" class="empty-state">
+        <ion-icon name="location-outline" size="large" color="medium"></ion-icon>
+        <h3>No hay POIs disponibles</h3>
+        <p>Agrega algunos favoritos o crea POIs personalizados para generar rutas</p>
+        <ion-button fill="outline" (click)="router.navigate(['/pois'])">
+          <ion-icon name="search" slot="start"></ion-icon>
+          Explorar POIs
+        </ion-button>
+      </div>
+    </div>
+
+    <!-- Botón de continuar fijo en la parte inferior -->
+    <div class="continue-section" *ngIf="selectedPois.length > 0">
+      <div class="continue-info">
+        <span class="selected-count">{{selectedPois.length}} puntos seleccionados</span>
+        <span class="min-required" *ngIf="selectedPois.length < 2">
+          (mínimo 2 requeridos)
+        </span>
+      </div>
+      <ion-button 
+        expand="block" 
+        size="large"
+        [disabled]="selectedPois.length < 2"
+        (click)="continueToConfiguration()">
+        <ion-icon name="arrow-forward" slot="end"></ion-icon>
+        Continuar configuración
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Pestaña: Configurar Ruta -->
+  <div *ngIf="currentSegment === 'configure'" class="config-container">
+    <div class="config-header">
+      <h2>Personaliza tu ruta</h2>
+      <p>Configura los detalles para generar la ruta perfecta</p>
+    </div>
+
+    <!-- Mapa con POIs seleccionados -->
+    <div class="selected-map-section">
+      <app-map
+        [center]="getSelectedPoisCenter()"
+        [zoom]="13"
+        [markers]="getSelectedPoisAsMarkers()"
+        height="250px">
+      </app-map>
+    </div>
+
+    <div class="config-content">
+      <!-- POIs seleccionados -->
+      <ion-card class="selected-pois-card">
+        <ion-card-header>
+          <ion-card-title>
+            Puntos seleccionados ({{selectedPois.length}})
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="selected-pois-grid">
+            <div *ngFor="let poi of selectedPois" class="selected-poi-item">
+              <img [src]="poi.image || 'assets/images/default-poi.jpg'" 
+                   [alt]="poi.name"
+                   (error)="onImageError($event)">
+              <div class="poi-info">
+                <strong>{{poi.name}}</strong>
+                <small>{{getCategoryIcon(poi.category)}} {{poi.category}}</small>
+              </div>
+              <ion-button 
+                fill="clear" 
+                size="small" 
+                color="danger"
+                (click)="removePoi(poi)">
+                <ion-icon name="close" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+          
+          <ion-button 
+            fill="outline" 
+            expand="block" 
+            (click)="currentSegment = 'select'">
+            <ion-icon name="add" slot="start"></ion-icon>
+            Agregar más puntos
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Configuración de ruta -->
+      <ion-card class="route-config-card">
+        <ion-card-header>
+          <ion-card-title>Configuración de la ruta</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-item>
+            <ion-label position="stacked">Duración deseada</ion-label>
+            <ion-select [(ngModel)]="routeConfig.duration" placeholder="Selecciona duración">
+              <ion-select-option value="medio día">Medio día (3-4 horas)</ion-select-option>
+              <ion-select-option value="1 día">1 día completo (6-8 horas)</ion-select-option>
+              <ion-select-option value="2 días">2 días (fin de semana)</ion-select-option>
+              <ion-select-option value="3 días">3 días (escapada)</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Tus preferencias e intereses</ion-label>
+            <ion-textarea 
+              [(ngModel)]="routeConfig.preferences"
+              placeholder="Ej: Me gusta la historia, la gastronomía local, la fotografía, lugares tranquilos..."
+              rows="3">
+            </ion-textarea>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Punto de partida</ion-label>
+            <ion-input 
+              [(ngModel)]="routeConfig.baseLocation"
+              placeholder="Ej: Hotel en Almería centro, Estación de tren...">
+            </ion-input>
+          </ion-item>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Botón generar -->
+      <div class="generate-section">
+        <ion-button 
+          expand="block" 
+          size="large"
+          color="primary"
+          [disabled]="!canGenerateRoute()"
+          (click)="generateRoute()">
+          <ion-spinner *ngIf="isGenerating" slot="start"></ion-spinner>
+          <ion-icon *ngIf="!isGenerating" name="sparkles" slot="start"></ion-icon>
+          {{isGenerating ? 'Generando ruta con IA...' : 'Generar ruta perfecta con IA'}}
+        </ion-button>
+        
+        <p class="generate-help" *ngIf="!canGenerateRoute()">
+          <ion-icon name="information-circle" color="medium"></ion-icon>
+          Selecciona al menos 2 puntos para generar una ruta
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestaña: Rutas Guardadas -->
+  <div *ngIf="currentSegment === 'saved'" class="saved-container">
+    <div class="saved-header">
+      <h2>Rutas guardadas</h2>
+      <p>Tus rutas generadas con inteligencia artificial</p>
+    </div>
+
+    <!-- Mapa para mostrar ruta seleccionada -->
+    <div class="route-map-section" *ngIf="selectedRoute">
+      <div class="map-header">
+        <h3>{{selectedRoute.name}}</h3>
+        <ion-button fill="clear" size="small" (click)="hideRouteMap()">
+          <ion-icon name="close" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+      <app-map
+        [center]="getRouteCenterPoint(selectedRoute)"
+        [zoom]="12"
+        [markers]="routeMarkers"
+        height="300px">
+      </app-map>
+      <div class="route-summary">
+        <span><ion-icon name="location"></ion-icon> {{selectedRoute.orderedPois.length}} puntos</span>
+        <span><ion-icon name="time"></ion-icon> {{selectedRoute.estimatedTime}}</span>
+        <span><ion-icon name="car"></ion-icon> {{selectedRoute.totalDistance}}</span>
+      </div>
+    </div>
+
+    <!-- Lista de rutas guardadas -->
+    <div class="routes-list">
+      <div *ngIf="savedRoutes.length === 0" class="empty-state">
+        <ion-icon name="map-outline" size="large" color="medium"></ion-icon>
+        <h3>No tienes rutas guardadas</h3>
+        <p>Genera tu primera ruta personalizada con IA</p>
+        <ion-button fill="outline" (click)="currentSegment = 'select'">
+          <ion-icon name="add" slot="start"></ion-icon>
+          Crear primera ruta
+        </ion-button>
+      </div>
+
+      <ion-card *ngFor="let route of savedRoutes" class="route-card">
+        <ion-card-header>
+          <div class="route-title-section">
+            <ion-card-title>{{route.name}}</ion-card-title>
+            <ion-chip [color]="getDifficultyColor(route.difficulty)" size="small">
+              {{route.difficulty}}
+            </ion-chip>
+          </div>
+          <ion-card-subtitle>{{route.estimatedTime}} • {{route.totalDistance}}</ion-card-subtitle>
+        </ion-card-header>
+
+        <ion-card-content>
+          <p class="route-description">{{route.description}}</p>
+          
+          <!-- Vista previa de POIs -->
+          <div class="route-pois-preview">
+            <div class="pois-preview-header">
+              <strong>{{route.orderedPois.length}} puntos en la ruta:</strong>
+            </div>
+            <div class="pois-preview-list">
+              <div *ngFor="let poi of route.orderedPois.slice(0, 4); let i = index" 
+                   class="poi-preview-item">
+                <span class="poi-number">{{i + 1}}</span>
+                <img [src]="poi.image || 'assets/images/default-poi.jpg'" 
+                     [alt]="poi.name"
+                     (error)="onImageError($event)">
+                <div class="poi-preview-info">
+                  <strong>{{poi.name}}</strong>
+                  <small>{{poi.timeToSpend}}</small>
+                </div>
+              </div>
+              <div *ngIf="route.orderedPois.length > 4" class="more-pois">
+                +{{route.orderedPois.length - 4}} más
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="route-actions">
+            <ion-button fill="outline" (click)="showRouteOnMap(route)">
+              <ion-icon name="map" slot="start"></ion-icon>
+              Ver en mapa
+            </ion-button>
+            
+            <ion-button fill="outline" (click)="openInGoogleMaps(route)">
+              <ion-icon name="navigate" slot="start"></ion-icon>
+              Google Maps
+            </ion-button>
+            
+            <ion-button fill="clear" color="danger" (click)="deleteRoute(route)">
+              <ion-icon name="trash" slot="start"></ion-icon>
+              Eliminar
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
 </ion-content>

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'; // Añadir HttpParams
 import { Observable, map, catchError, of, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { POI } from '../components/poi-card/poi-card.component';
@@ -56,7 +56,52 @@ interface FoursquareResponse {
   results: FoursquareVenue[];
 }
 
-// ELIMINAR LA INTERFACE PaginatedResponse DE AQUÍ - Ya está en search.interfaces.ts
+// Interfaz para la respuesta de detalles de venue
+interface FoursquareVenueDetailsResponse {
+  fsq_id: string;
+  name: string;
+  location?: {
+    address?: string;
+    locality?: string;
+    region?: string;
+    country?: string;
+    formatted_address?: string;
+  };
+  geocodes?: {
+    main: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+  categories?: Array<{
+    id: string;
+    name: string;
+    short_name?: string;
+    plural_name?: string;
+    icon: {
+      prefix: string;
+      suffix: string;
+    };
+  }>;
+  rating?: number;
+  stats?: {
+    total_photos?: number;
+    total_ratings?: number;
+    total_tips?: number;
+  };
+  photos?: Array<{
+    id: string;
+    prefix: string;
+    suffix: string;
+    width: number;
+    height: number;
+  }>;
+  description?: string;
+  hours?: any;
+  price?: number;
+  website?: string;
+  tel?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -124,6 +169,26 @@ export class FoursquareService {
       const allPois = this.allPoisCache.get(cacheKey) || [];
       return of(this.paginateResults(allPois, page, pageSize, cacheKey));
     }
+  }
+
+  getPoiById(poiId: string): Observable<POI | null> {
+    console.log('FoursquareService: Getting POI by ID:', poiId);
+    
+    // Primero buscar en cache
+    const cachedPoi = this.findPoiInCache(poiId);
+    if (cachedPoi) {
+      console.log('FoursquareService: POI found in cache:', cachedPoi.name);
+      return of(cachedPoi);
+    }
+
+    // Si no está en cache, hacer petición a Foursquare
+    console.log('FoursquareService: POI not in cache, fetching from Foursquare API');
+    return this.getVenueDetails(poiId);
+  }
+
+  private isCustomPoiId(id: string): boolean {
+    // Los POIs personalizados tienen IDs de MongoDB (24 caracteres hex)
+    return id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
   }
 
   // Actualizar el método loadAllNearbyPois para más debug:
@@ -467,7 +532,7 @@ export class FoursquareService {
   ): Observable<POI[]> {
     console.log(`FoursquareService: Global search "${query}" desde ${latitude}, ${longitude}`);
     
-    // Para búsquedas de texto (como nombres de ciudades), hacer búsqueda sin restricción de ubicación
+    // Para búsquedas de texto (como nombres de ciudades), usar búsqueda global
     if (this.isLocationQuery(query)) {
       console.log(`FoursquareService: "${query}" parece ser una búsqueda de ubicación, usando búsqueda global`);
       return this.searchByLocationName(query, limit, offset);
@@ -723,35 +788,54 @@ export class FoursquareService {
     return null;
   }
 
-  // Obtener detalles de un venue específico
   getVenueDetails(venueId: string): Observable<POI | null> {
-    console.log(`FoursquareService: Obteniendo detalles para venue ${venueId}`);
+    console.log('FoursquareService: Getting venue details from API:', venueId);
     
-    // Buscar primero en cache de todos los POIs
-    const cachedPoi = this.findPoiInCache(venueId);
-    if (cachedPoi) {
-      console.log(`FoursquareService: POI encontrado en cache: ${cachedPoi.name}`);
-      return of(cachedPoi);
-    }
-    
-    // Si no está en cache, hacer petición específica
     const url = `${this.baseUrl}/places/${venueId}`;
-    const params = {
-      fields: 'fsq_id,name,location,geocodes,categories,distance,rating,stats,photos,description,hours,price,website,tel'
-    };
+    const params = new HttpParams()
+      .set('fields', 'fsq_id,name,location,geocodes,categories,rating,stats,photos,description,hours,price,website,tel');
 
-    return this.http.get<any>(url, { 
+    return this.http.get<FoursquareVenueDetailsResponse>(url, { 
       headers: this.headers, 
       params 
     }).pipe(
-      map(venue => {
-        console.log(`FoursquareService: Detalles obtenidos para ${venue.name}`);
-        return this.transformVenueToPOI(venue);
+      map(response => {
+        console.log('FoursquareService: Venue details response:', response);
+        
+        if (response && response.fsq_id) {
+          // Transformar respuesta a formato POI usando bracket notation
+          const venue: FoursquareVenue = {
+            fsq_id: response.fsq_id,
+            name: response.name,
+            location: response['location'] || {},
+            geocodes: response['geocodes'] || { main: { latitude: 0, longitude: 0 } },
+            categories: response['categories'] || [],
+            rating: response['rating'],
+            stats: response['stats'],
+            photos: response['photos'],
+            description: response['description'],
+            hours: response['hours'],
+            price: response['price'],
+            website: response['website'],
+            tel: response['tel']
+          };
+          
+          const poi = this.transformVenueToPOI(venue);
+          if (poi) {
+            console.log('FoursquareService: Venue transformed to POI:', poi.name);
+          }
+          return poi;
+        }
+        
+        console.log('FoursquareService: Invalid venue response');
+        return null;
       }),
       catchError(error => {
-        console.error(`FoursquareService: Error obteniendo detalles para ${venueId}:`, error);
+        console.error('FoursquareService: Error getting venue details:', error);
         return of(null);
       })
     );
   }
 }
+
+export { POI };

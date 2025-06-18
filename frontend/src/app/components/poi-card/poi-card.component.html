@@ -1,15 +1,35 @@
 <ion-card class="poi-card" (click)="onCardClick($event)">
   <div class="card-image-container">
     <img [src]="poi.image" [alt]="poi.name" class="card-image">
-    <ion-button 
-      fill="clear" 
-      class="favorite-btn"
-      (click)="onFavoriteClick($event)">
-      <ion-icon 
-        [name]="poi.isFavorite ? 'heart' : 'heart-outline'"
-        [class.favorited]="poi.isFavorite">
-      </ion-icon>
-    </ion-button>
+    
+    <!-- Botones de acción circulares -->
+    <div class="card-actions">
+      <ion-button 
+        fill="clear" 
+        class="action-btn favorite-btn"
+        (click)="onFavoriteClick($event)">
+        <ion-icon 
+          [name]="poi.isFavorite ? 'heart' : 'heart-outline'"
+          [class.favorited]="poi.isFavorite">
+        </ion-icon>
+      </ion-button>
+      
+      @if (showActions) {
+        <ion-button 
+          fill="clear" 
+          class="action-btn edit-btn"
+          (click)="onEditClick($event)">
+          <ion-icon name="create"></ion-icon>
+        </ion-button>
+        
+        <ion-button 
+          fill="clear" 
+          class="action-btn delete-btn"
+          (click)="onDeleteClick($event)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+      }
+    </div>
   </div>
   
   <ion-card-content class="card-content">
@@ -44,8 +64,7 @@
         <span>{{ poi.estimatedTime }}</span>
       </div>
     </div>
-    
-    <!-- Cambiar el botón para ir a detalles -->
+
     <ion-button 
       expand="block" 
       class="view-details-btn"

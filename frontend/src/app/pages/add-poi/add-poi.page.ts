@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
-  IonContent, IonHeader, IonTitle, IonToolbar, IonButtons, IonBackButton,
+  IonContent, 
   IonButton, IonIcon, IonInput, IonTextarea, IonSelect, IonSelectOption,
   IonItem, IonLabel, IonSpinner, IonToast, IonAlert, IonCard, IonCardContent,
   IonCardHeader, IonCardTitle, IonActionSheet, IonImg
@@ -23,6 +23,8 @@ import { Subscription } from 'rxjs';
 
 import { MapComponent } from '../../components/map/map.component';
 import { CustomPoiService, CustomPOI } from '../../services/custom-poi.service';
+import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-add-poi',
@@ -40,6 +42,8 @@ import { CustomPoiService, CustomPOI } from '../../services/custom-poi.service';
 export class AddPoiPage implements OnInit, OnDestroy {
   private router = inject(Router);
   private customPoiService = inject(CustomPoiService);
+  private authService = inject(AuthService);
+  private toastService = inject(ToastService);
 
   @ViewChild(MapComponent) mapComponent!: MapComponent;
 
@@ -82,10 +86,9 @@ export class AddPoiPage implements OnInit, OnDestroy {
     { value: 'historical', label: 'Histórico' },
     { value: 'nature', label: 'Naturaleza' },
     { value: 'restaurant', label: 'Restaurante' },
-    { value: 'culture', label: 'Cultura' },
-    { value: 'shopping', label: 'Compras' },
-    { value: 'accommodation', label: 'Alojamiento' },
     { value: 'entertainment', label: 'Entretenimiento' },
+    { value: 'shopping', label: 'Compras' },
+    { value: 'culture', label: 'Cultura' },
     { value: 'sports', label: 'Deportes' },
     { value: 'health', label: 'Salud' },
     { value: 'education', label: 'Educación' },
@@ -93,20 +96,56 @@ export class AddPoiPage implements OnInit, OnDestroy {
     { value: 'general', label: 'General' }
   ];
 
-  // Usuario simulado (integrar con servicio de autenticación real)
-  currentUser = {
-    id: 'user123',
-    name: 'Usuario Actual'
-  };
+  // Current user from auth service
+  currentUser = this.authService.getCurrentUser();
 
   private subscription = new Subscription();
 
+  imageActionSheetButtons = [
+    {
+      text: 'Tomar foto',
+      icon: 'camera',
+      handler: () => {
+        this.onImageTypeSelected('camera');
+      }
+    },
+    {
+      text: 'URL de imagen',
+      icon: 'link',
+      handler: () => {
+        this.onImageTypeSelected('url');
+      }
+    },
+    {
+      text: 'Cancelar',
+      icon: 'close',
+      role: 'cancel'
+    }
+  ];
+
+  // Add the missing cancel alert buttons
+  cancelAlertButtons = [
+    {
+      text: 'Continuar editando',
+      role: 'cancel',
+      handler: () => {
+        this.showLocationAlert = false;
+      }
+    },
+    {
+      text: 'Descartar',
+      handler: () => {
+        this.onConfirmCancel();
+      }
+    }
+  ];
+
   constructor() {
-    addIcons({ 
-      camera, 
-      image, 
-      location, 
-      save, 
+    addIcons({
+      camera,
+      image,
+      location,
+      save,
       close,
       arrowBack,
       checkmark,
@@ -116,9 +155,17 @@ export class AddPoiPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('AddPoiPage: Inicializando página de añadir POI');
+    
+    // Verificar si el usuario está autenticado
+    if (!this.authService.isLoggedIn()) {
+      this.toastService.error('Debes iniciar sesión para añadir POIs');
+      this.router.navigate(['/login']);
+      return;
+    }
+
     this.getCurrentLocation();
     
-    // Añadir animación de entrada similar a login/register
+    // Añadir animación de entrada
     setTimeout(() => {
       const container = document.querySelector('.form-container');
       container?.classList.add('animate-in');
@@ -127,6 +174,41 @@ export class AddPoiPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+  }
+
+  isValidImageUrl(): boolean {
+    if (!this.poiImageUrl || this.poiImageUrl.trim().length === 0) {
+      return false;
+    }
+
+    // Basic URL validation
+    try {
+      const url = new URL(this.poiImageUrl);
+      // Check if it's a valid http/https URL
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        return false;
+      }
+      
+      // Check if it looks like an image URL
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+      const hasImageExtension = imageExtensions.some(ext => 
+        url.pathname.toLowerCase().includes(ext)
+      );
+      
+      // Accept if it has image extension or if it's from common image hosting services
+      const isImageHost = [
+        'images.unsplash.com',
+        'imgur.com',
+        'i.imgur.com',
+        'cdn.pixabay.com',
+        'images.pexels.com',
+        'firebasestorage.googleapis.com'
+      ].some(host => url.hostname.includes(host));
+
+      return hasImageExtension || isImageHost || url.pathname.includes('image');
+    } catch {
+      return false;
+    }
   }
 
   async getCurrentLocation() {
@@ -143,15 +225,18 @@ export class AddPoiPage implements OnInit, OnDestroy {
 
       console.log('AddPoiPage: Ubicación actual obtenida:', this.currentUserLocation);
       
+      // Actualizar marcador en el mapa
+      this.updateMapMarker();
+      
       // Centrar mapa en ubicación actual
       if (this.mapComponent) {
         this.mapComponent.centerMap(location.latitude, location.longitude, 15);
       }
 
-      this.showToastMessage('Ubicación obtenida correctamente', 'success');
+      this.toastService.success('Ubicación obtenida correctamente');
     } catch (error) {
       console.error('AddPoiPage: Error obteniendo ubicación:', error);
-      this.showToastMessage('No se pudo obtener la ubicación actual', 'warning');
+      this.toastService.warning('No se pudo obtener la ubicación actual');
     } finally {
       this.isGettingLocation = false;
     }
@@ -162,14 +247,10 @@ export class AddPoiPage implements OnInit, OnDestroy {
   }
 
   async onImageTypeSelected(type: 'url' | 'camera') {
-    this.showImageActionSheet = false;
     this.selectedImageType = type;
-
+    
     if (type === 'camera') {
       await this.takePhoto();
-    } else {
-      // Limpiar imagen de cámara si se selecciona URL
-      this.poiImageFromCamera = '';
     }
   }
 
@@ -177,15 +258,12 @@ export class AddPoiPage implements OnInit, OnDestroy {
     this.isTakingPhoto = true;
     
     try {
-      const imageDataUrl = await this.customPoiService.takePicture();
-      this.poiImageFromCamera = imageDataUrl;
-      this.poiImageUrl = ''; // Limpiar URL si se toma foto
-      console.log('AddPoiPage: Foto tomada exitosamente');
-      this.showToastMessage('Foto tomada correctamente', 'success');
+      const photoData = await this.customPoiService.takePicture();
+      this.poiImageFromCamera = photoData;
+      this.toastService.success('Foto tomada correctamente');
     } catch (error) {
       console.error('AddPoiPage: Error tomando foto:', error);
-      this.showToastMessage('No se pudo tomar la foto', 'danger');
-      this.selectedImageType = null;
+      this.toastService.error('Error tomando la foto');
     } finally {
       this.isTakingPhoto = false;
     }
@@ -231,12 +309,18 @@ export class AddPoiPage implements OnInit, OnDestroy {
       );
     }
 
-    this.showToastMessage('Ubicación actual seleccionada', 'success');
+    this.toastService.success('Ubicación actual seleccionada');
   }
 
   async onSavePoi() {
     if (!this.isFormValid()) {
-      this.showToastMessage('Por favor, completa todos los campos requeridos', 'warning');
+      this.toastService.warning('Por favor, completa todos los campos requeridos');
+      return;
+    }
+
+    if (!this.currentUser) {
+      this.toastService.error('Usuario no autenticado');
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -247,6 +331,12 @@ export class AddPoiPage implements OnInit, OnDestroy {
       const finalImage = this.selectedImageType === 'camera' 
         ? this.poiImageFromCamera 
         : this.poiImageUrl;
+
+      if (!finalImage) {
+        this.toastService.warning('Por favor, añade una imagen');
+        this.isSaving = false;
+        return;
+      }
 
       const customPoi = await this.customPoiService.addCustomPoi(
         this.poiName,
@@ -262,9 +352,9 @@ export class AddPoiPage implements OnInit, OnDestroy {
       );
 
       console.log('AddPoiPage: POI personalizado creado:', customPoi.name);
-      this.showToastMessage('POI añadido correctamente', 'success');
+      this.toastService.success('POI añadido correctamente');
 
-      // CAMBIO PRINCIPAL: Navegar a los detalles del POI creado
+      // Navegar a los detalles del POI creado
       setTimeout(() => {
         console.log('AddPoiPage: Navegando a detalles del POI creado:', customPoi.id);
         this.router.navigate(['/poi', customPoi.id]);
@@ -272,7 +362,7 @@ export class AddPoiPage implements OnInit, OnDestroy {
 
     } catch (error) {
       console.error('AddPoiPage: Error guardando POI:', error);
-      this.showToastMessage('Error al guardar el POI', 'danger');
+      this.toastService.error('Error al guardar el POI');
     } finally {
       this.isSaving = false;
     }
@@ -280,15 +370,15 @@ export class AddPoiPage implements OnInit, OnDestroy {
 
   onCancel() {
     if (this.hasUnsavedChanges()) {
+      // Mostrar alerta de confirmación
       this.showLocationAlert = true;
     } else {
-      this.router.navigate(['/tabs/home']);
+      this.router.navigate(['/pois']);
     }
   }
 
   onConfirmCancel() {
-    this.showLocationAlert = false;
-    this.router.navigate(['/tabs/home']);
+    this.router.navigate(['/pois']);
   }
 
   private hasUnsavedChanges(): boolean {
@@ -301,32 +391,15 @@ export class AddPoiPage implements OnInit, OnDestroy {
     );
   }
 
-  protected isFormValid(): boolean {
-    return !!(
-      this.poiName.trim() &&
-      this.poiDescription.trim() &&
-      this.selectedImageType &&
-      (
-        (this.selectedImageType === 'url' && this.isValidImageUrl()) ||
-        (this.selectedImageType === 'camera' && this.poiImageFromCamera)
-      ) &&
-      this.selectedLocation.latitude &&
-      this.selectedLocation.longitude
-    );
-  }
+  isFormValid(): boolean {
+    const hasValidImage = this.selectedImageType === 'url' 
+      ? this.isValidImageUrl() 
+      : this.poiImageFromCamera.length > 0;
 
-  protected isValidImageUrl(): boolean {
-    if (!this.poiImageUrl.trim()) return false;
-    return this.customPoiService.isValidImageUrl(this.poiImageUrl.trim());
-  }
-
-  private showToastMessage(message: string, color: 'success' | 'warning' | 'danger') {
-    this.toastMessage = message;
-    this.toastColor = color;
-    this.showToast = true;
-    setTimeout(() => {
-      this.showToast = false;
-    }, 3000);
+    return this.isNameValid && 
+           this.isDescriptionValid && 
+           this.poiCategory.length > 0 &&
+           hasValidImage;
   }
 
   // Getters para el template
@@ -339,17 +412,15 @@ export class AddPoiPage implements OnInit, OnDestroy {
   }
 
   get isNameValid(): boolean {
-    return this.poiName.trim().length > 0 && this.poiName.length <= this.nameMaxLength;
+    return this.poiName.trim().length >= 3 && this.poiName.length <= this.nameMaxLength;
   }
 
   get isDescriptionValid(): boolean {
-    return this.poiDescription.trim().length > 0 && this.poiDescription.length <= this.descriptionMaxLength;
+    return this.poiDescription.trim().length >= 10 && this.poiDescription.length <= this.descriptionMaxLength;
   }
 
   get selectedImage(): string {
-    return this.selectedImageType === 'camera' 
-      ? this.poiImageFromCamera 
-      : this.poiImageUrl;
+    return this.selectedImageType === 'camera' ? this.poiImageFromCamera : this.poiImageUrl;
   }
 
   get mapCenter() {
@@ -370,40 +441,5 @@ export class AddPoiPage implements OnInit, OnDestroy {
       description: this.poiDescription || 'Nuevo POI personalizado',
       isSelected: true
     }];
-  }
-
-  // Action Sheet buttons
-  get imageActionSheetButtons() {
-    return [
-      {
-        text: 'Tomar foto',
-        icon: 'camera',
-        handler: () => this.onImageTypeSelected('camera')
-      },
-      {
-        text: 'URL de imagen',
-        icon: 'image',
-        handler: () => this.onImageTypeSelected('url')
-      },
-      {
-        text: 'Cancelar',
-        icon: 'close',
-        role: 'cancel'
-      }
-    ];
-  }
-
-  // Alert buttons
-  get cancelAlertButtons() {
-    return [
-      {
-        text: 'Continuar editando',
-        role: 'cancel'
-      },
-      {
-        text: 'Descartar cambios',
-        handler: () => this.onConfirmCancel()
-      }
-    ];
   }
 }

@@ -12,37 +12,35 @@
     <!-- Imagen Principal -->
     <div class="hero-image-section">
       <img [src]="poi.image" [alt]="poi.name" class="hero-image">
-      
-      <!-- Overlay con controles -->
-      <div class="hero-overlay">
-        <div class="hero-controls">          
-          <div class="action-buttons">
-            <ion-button 
-              fill="clear" 
-              class="action-btn"
-              (click)="onToggleFavorite()">
-              <ion-icon 
-                [name]="poi.isFavorite ? 'heart' : 'heart-outline'" 
-                slot="icon-only">
-              </ion-icon>
-            </ion-button>
-            
-            <ion-button 
-              fill="clear" 
-              class="action-btn"
-              (click)="onShare()">
-              <ion-icon name="share" slot="icon-only"></ion-icon>
-            </ion-button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Contenido Principal -->
     <div class="content-section">
       <!-- Información Principal -->
       <div class="main-info">
-        <h1 class="poi-title">{{ poi.name }}</h1>
+         <div class="title-row">
+          <h1 class="poi-title">{{ poi.name }}</h1>
+          <div class="action-buttons">
+            <ion-button 
+              fill="clear" 
+              class="favorite-btn"
+              [class.is-favorite]="poi.isFavorite"
+              (click)="onToggleFavorite()">
+              <ion-icon 
+                [name]="poi.isFavorite ? 'heart' : 'heart-outline'" 
+                [class.favorite-active]="poi.isFavorite"
+                slot="icon-only">
+              </ion-icon>
+            </ion-button>
+            
+            <ion-button 
+              fill="clear" 
+              class="share-btn"
+              (click)="onShare()">
+              <ion-icon name="share" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
         
         <div class="location-info">
           <ion-icon name="location-outline"></ion-icon>
@@ -129,10 +127,14 @@
         <div class="comment-form" *ngIf="isLoggedIn">
           <div class="form-header">
             <ion-avatar class="user-avatar">
-              <img [src]="currentUser.avatar" [alt]="currentUser.name">
+              @if (currentUser) {
+                <img [src]="currentUser.avatar" [alt]="currentUser.name">
+              }
             </ion-avatar>
             <div class="form-info">
-              <span class="user-name">{{ currentUser.name }}</span>
+              @if (currentUser) {
+                <span class="user-name">{{ currentUser.name }}</span>
+              }
               <div class="rating-selector">
                 <ion-icon 
                   *ngFor="let star of [1,2,3,4,5]"

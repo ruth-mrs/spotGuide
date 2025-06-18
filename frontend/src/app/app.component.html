@@ -5,7 +5,6 @@
       [showBack]="toolbarConfig.showBack"
       [showSearch]="toolbarConfig.showSearch"
       [searchPlaceholder]="getSearchPlaceholder()"
-      [isGlobalSearch]="true"
       [currentLocation]="currentLocation"
       (back)="onBack()"
       (searchSubmit)="onSearchSubmit($event)">
@@ -14,5 +13,7 @@
 
   <ion-router-outlet id="main-content"></ion-router-outlet>
 
-  <app-tabs></app-tabs>
+  @if (shouldShowTabs) {
+    <app-tabs></app-tabs>
+  }
 </ion-app>

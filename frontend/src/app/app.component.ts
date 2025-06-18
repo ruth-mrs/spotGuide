@@ -6,6 +6,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { Location } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { SearchService } from './services/search.service';
+import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ export class AppComponent implements OnInit {
   private searchService = inject(SearchService);
   private router = inject(Router);
   private location = inject(Location);
+  private authService = inject(AuthService);
 
   toolbarConfig = {
     showBack: false,
@@ -26,38 +28,58 @@ export class AppComponent implements OnInit {
   // Ubicación actual del usuario (por defecto Almería)
   currentLocation = { lat: 36.8377, lng: -2.4585 };
 
+  isAuthenticated = false;
+  currentRoute = '';
+
   ngOnInit() {
     // Escuchar cambios de ruta para actualizar la configuración del toolbar
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
+      this.currentRoute = event.url;
       this.updateToolbarConfig(event.url);
+      
+      console.log('AppComponent: Navegación completada a:', event.url);
     });
 
     // Configuración inicial
+    this.currentRoute = this.router.url;
     this.updateToolbarConfig(this.router.url);
 
     // Intentar obtener la ubicación del usuario
     this.getCurrentLocation();
+
+    // Escuchar cambios en la autenticación SIN interferir con navegación
+    this.authService.isAuthenticated$.subscribe(isAuth => {
+      this.isAuthenticated = isAuth;
+      console.log('AppComponent: Auth status changed:', isAuth);
+      // NO hacer redirecciones automáticas aquí
+    });
+  }
+
+  get isUserLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
   }
 
   private updateToolbarConfig(url: string) {
-    // Resetear configuración por defecto
     this.toolbarConfig = {
       showBack: false,
       showSearch: false
     };
 
-    // Configurar según la ruta
     switch (true) {
       case url === '/' || url === '/home':
-        this.toolbarConfig = { showBack: false, showSearch: true };
+        this.toolbarConfig = { showBack: false, showSearch: this.isAuthenticated };
         break;
       case url === '/pois' || url.startsWith('/pois'):
-        this.toolbarConfig = { showBack: false, showSearch: true };
+        this.toolbarConfig = { showBack: true, showSearch: true };
         break;
       case url === '/profile':
-        this.toolbarConfig = { showBack: false, showSearch: false }; // Profile sin búsqueda
+        this.toolbarConfig = { showBack: true, showSearch: true };
         break;
       case url === '/add-poi':
         this.toolbarConfig = { showBack: true, showSearch: false };
@@ -69,18 +91,35 @@ export class AppComponent implements OnInit {
         this.toolbarConfig = { showBack: true, showSearch: false };
         break;
       case url.startsWith('/poi/'):
-        // Detalle de POI específico
         this.toolbarConfig = { showBack: true, showSearch: false };
         break;
       default:
-        // Para otras rutas secundarias
         if (url.includes('/') && url !== '/') {
           this.toolbarConfig = { showBack: true, showSearch: false };
         } else {
-          this.toolbarConfig = { showBack: false, showSearch: true };
+          this.toolbarConfig = { showBack: false, showSearch: this.isAuthenticated };
         }
         break;
     }
+  }
+
+  get shouldShowTabs(): boolean {
+    // Rutas que pueden mostrar tabs
+    const tabRoutes = ['/home', '/pois', '/profile', '/add-poi', '/generate-route'];
+    const isInTabRoute = tabRoutes.some(route => 
+      this.currentRoute === route || 
+      (route === '/pois' && this.currentRoute.startsWith('/poi/')) // Incluir detalles de POI
+    );
+    
+    // Mostrar tabs si está autenticado Y en una ruta que soporte tabs
+    // O si es una ruta pública que debe mostrar tabs
+    const publicTabRoutes = ['/home', '/pois'];
+    const isPublicTabRoute = publicTabRoutes.some(route => 
+      this.currentRoute === route || 
+      (route === '/pois' && this.currentRoute.startsWith('/poi/'))
+    );
+    
+    return (this.isAuthenticated && isInTabRoute) || isPublicTabRoute;
   }
 
   // Método para obtener el placeholder del searchbar según la página
@@ -102,34 +141,50 @@ export class AppComponent implements OnInit {
     this.location.back();
   }
 
-  // Método para manejar cambios en el searchbar (NO se usa para búsqueda global)
   onSearchChange(query: string) {
-    // Este método está disponible pero no se usa para la búsqueda global
-    // Se mantiene para compatibilidad futura si se necesita búsqueda en tiempo real
     console.log('Search change (not used):', query);
   }
 
-  // Método principal que ejecuta la búsqueda SOLO cuando se envía (Enter o botón)
   onSearchSubmit(query: string) {
-    console.log('Búsqueda enviada desde toolbar:', query);
+    console.log('AppComponent: Búsqueda enviada desde toolbar:', query);
     
-    // Validar que el query tenga contenido mínimo
+    const currentUrl = this.router.url;
+    
+    // Validar query mínimo
     if (query.trim().length === 0) {
-      // Si está vacío, navegar a POIs sin filtros
-      this.router.navigate(['/pois']);
-      return;
+      if (currentUrl.includes('/profile')) {
+        // En perfil, limpiar filtros
+        this.broadcastSearchToProfile('');
+        return;
+      } else {
+        // En otras vistas, ir a POIs sin filtros
+        this.router.navigate(['/pois']);
+        return;
+      }
     }
 
     if (query.trim().length < 2) {
-      console.log('Búsqueda demasiado corta, se requieren al menos 2 caracteres');
+      console.log('AppComponent: Búsqueda demasiado corta');
       return;
     }
 
-    // Actualizar la ubicación en el servicio de búsqueda
+    // Actualizar ubicación en servicio
     this.searchService.updateSearchLocation(this.currentLocation);
     
-    // Ejecutar búsqueda global que siempre redirige a /pois con los resultados
-    this.performGlobalSearch(query.trim());
+    // COMPORTAMIENTO SEGÚN LA VISTA
+    if (currentUrl.includes('/profile')) {
+      // Búsqueda local en perfil
+      console.log('AppComponent: Búsqueda local en perfil');
+      this.broadcastSearchToProfile(query.trim());
+    } else {
+      // Búsqueda global → siempre a poi-list
+      this.performGlobalSearch(query.trim());
+    }
+  }
+
+  private broadcastSearchToProfile(query: string) {
+    // Usar un servicio compartido o EventEmitter
+    this.searchService.setProfileSearchQuery(query);
   }
 
   // Método que realiza la búsqueda usando FoursquareService y datos locales
@@ -197,9 +252,5 @@ export class AppComponent implements OnInit {
   get isMainPage(): boolean {
     const currentUrl = this.router.url;
     return ['/', '/home', '/pois', '/profile', '/add-poi'].includes(currentUrl);
-  }
-
-  get currentRoute(): string {
-    return this.router.url;
   }
 }
