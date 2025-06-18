@@ -31,22 +31,23 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    // Para rutas protegidas, verificar autenticación
     return this.authService.isAuthenticated$.pipe(
-      take(1),
-      map(isAuthenticated => {
-        console.log('AuthGuard: Usuario autenticado:', isAuthenticated);
-        
-        if (isAuthenticated) {
-          return true;
-        } else {
-          console.log('AuthGuard: Redirigiendo a login desde:', state.url);
-          this.router.navigate(['/login'], { 
-            queryParams: { returnUrl: state.url }
-          });
-          return false;
-        }
-      })
-    );
+    take(1),
+    map(isAuthenticated => {
+      console.log('AuthGuard: Usuario autenticado:', isAuthenticated);
+      console.log('AuthGuard: Estado actual del usuario:', this.authService.getCurrentUser());
+      
+      if (isAuthenticated) {
+        console.log('AuthGuard: Acceso permitido a:', state.url);
+        return true;
+      } else {
+        console.log('AuthGuard: Redirigiendo a login desde:', state.url);
+        this.router.navigate(['/login'], { 
+          queryParams: { returnUrl: state.url }
+        });
+        return false;
+      }
+    })
+  );
   }
 }

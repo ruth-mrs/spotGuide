@@ -30,13 +30,12 @@ interface FieldErrors {
   styleUrls: ['./edit-profile.page.scss'],
   standalone: true,
   imports: [ 
-    IonContent, IonButton, IonSpinner,
+    IonContent, IonButton, IonSpinner, IonIcon,
     CommonModule, FormsModule,
     CustomInputComponent, AvatarUploadComponent
   ]
 })
 export class EditProfilePage implements OnInit {
-  // ...rest of the code remains the same...
   editProfileData: EditProfileData = {
     name: '',
     description: '',
@@ -60,13 +59,16 @@ export class EditProfilePage implements OnInit {
     private httpService: HttpService
   ) {}
 
-  ngOnInit() {
+   ngOnInit() {
+    console.log('EditProfilePage: Component initialized');
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser) {
+      console.log('EditProfilePage: No user found, redirecting to login');
       this.router.navigate(['/login']);
       return;
     }
 
+    console.log('EditProfilePage: Loading user data:', currentUser);
     // Cargar datos actuales del usuario
     this.editProfileData = {
       name: currentUser.name,

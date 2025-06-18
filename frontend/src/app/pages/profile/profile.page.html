@@ -1,5 +1,14 @@
 <ion-content [fullscreen]="true" class="profile-bg">
   <div class="background-gradient"></div>
+  @if (searchQuery) {
+    <div class="search-status">
+      <ion-chip color="primary" outline="true">
+        <ion-icon name="search" size="small"></ion-icon>
+        <ion-label>Filtrando: "{{ searchQuery }}"</ion-label>
+        <ion-icon name="close" (click)="clearSearch()"></ion-icon>
+      </ion-chip>
+    </div>
+  }
 
   <!-- Contenedor principal con margin-top para toolbar -->
   <div class="main-container">

@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, forkJoin, Observable, of } from 'rxjs';
 import { HttpService } from './http.service';
 import { AuthService } from './auth.service';
 import { catchError, map } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 export interface CustomPOI {
   id: string;
@@ -33,24 +35,101 @@ export interface CustomPOI {
 export class CustomPoiService {
   constructor(
     private httpService: HttpService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
-  // Obtener POIs públicos
-  getPublicCustomPois(params?: {
-    page?: number;
-    limit?: number;
-    lat?: number;
-    lng?: number;
-    radius?: number;
-  }): Observable<CustomPOI[]> {
-    return this.httpService.getPublicCustomPois(params).pipe(
-      map(pois => pois.map(poi => this.formatCustomPoi(poi))),
+  // ✅ CORREGIR: Obtener POIs públicos del backend
+  getPublicCustomPois(): Observable<CustomPOI[]> {
+    return this.http.get<any>(`${environment.apiUrl}/custom-pois/public`).pipe(
+      map(response => {
+        console.log('CustomPoiService: POIs públicos del backend:', response);
+        
+        // El backend devuelve { success: true, pois: [...] } o directamente [...]
+        const pois = response.pois || response;
+        
+        return pois.map((poi: any) => ({
+          id: poi.id,
+          name: poi.name,
+          description: poi.description,
+          category: poi.category,
+          image: poi.image || '',
+          imageType: poi.imageType || 'url',
+          latitude: poi.latitude,
+          longitude: poi.longitude,
+          rating: poi.rating || 0,
+          reviewCount: poi.reviewCount || 0,
+          distance: poi.distance || '0 km',
+          estimatedTime: poi.estimatedTime || '0 min',
+          isFavorite: poi.isFavorite || false,
+          userId: poi.userId,
+          userName: poi.userName,
+          createdAt: new Date(poi.createdAt),
+          isCustom: true as const,
+          isPublic: poi.isPublic !== false,
+          totalFavorites: poi.totalFavorites || 0
+        }));
+      }),
       catchError(error => {
         console.error('CustomPoiService: Error obteniendo POIs públicos:', error);
         return of([]);
       })
     );
+  }
+
+  // ✅ CORREGIR: Obtener POIs del usuario (local storage o backend)
+  private getUserLocalPois(): CustomPOI[] {
+    // Si tienes POIs en localStorage, los obtienes aquí
+    // Si no, devuelves array vacío
+    try {
+      const stored = localStorage.getItem('customPois');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error cargando POIs locales:', error);
+    }
+    return [];
+  }
+
+  // ✅ CORREGIR: Combinar POIs locales + backend
+  getAllCustomPois(): Observable<CustomPOI[]> {
+    return forkJoin([
+      of(this.getUserLocalPois()), // ✅ POIs locales (array)
+      this.getPublicCustomPois()   // ✅ POIs del backend (Observable)
+    ]).pipe(
+      map(([localPois, backendPois]) => {
+        console.log(`CustomPoiService: Combinando ${localPois.length} locales + ${backendPois.length} backend`);
+        
+        // Evitar duplicados usando ID
+        const seenIds = new Set<string>();
+        const combinedPois: CustomPOI[] = [];
+        
+        // ✅ Primero los locales (prioridad)
+        localPois.forEach(poi => {
+          if (!seenIds.has(poi.id)) {
+            seenIds.add(poi.id);
+            combinedPois.push(poi);
+          }
+        });
+        
+        // ✅ Luego los del backend
+        backendPois.forEach(poi => {
+          if (!seenIds.has(poi.id)) {
+            seenIds.add(poi.id);
+            combinedPois.push(poi);
+          }
+        });
+        
+        console.log(`CustomPoiService: ${combinedPois.length} POIs únicos combinados`);
+        return combinedPois;
+      })
+    );
+  }
+
+  // ✅ ALIAS para compatibilidad
+  getCustomPois(): Observable<CustomPOI[]> {
+    return this.getAllCustomPois();
   }
 
   // Obtener POI por ID
@@ -65,48 +144,48 @@ export class CustomPoiService {
   }
 
   async addCustomPoi(
-  name: string,
-  description: string,
-  category: string,
-  image: string,
-  imageType: 'url' | 'camera',
-  latitude: number,
-  longitude: number,
-  userId: string,
-  userName: string,
-  currentUserLocation?: { latitude: number; longitude: number }
-): Promise<CustomPOI> {
-  const poiData = {
-    name: name.trim(),
-    description: description.trim(),
-    category,
-    image,
-    imageType,
-    latitude,
-    longitude,
-    createdFromLocation: currentUserLocation
-  };
+    name: string,
+    description: string,
+    category: string,
+    image: string,
+    imageType: 'url' | 'camera',
+    latitude: number,
+    longitude: number,
+    userId: string,
+    userName: string,
+    currentUserLocation?: { latitude: number; longitude: number }
+  ): Promise<CustomPOI> {
+    const poiData = {
+      name: name.trim(),
+      description: description.trim(),
+      category,
+      image,
+      imageType,
+      latitude,
+      longitude,
+      createdFromLocation: currentUserLocation
+    };
 
-  console.log('CustomPoiService: Creando POI con datos:', poiData);
+    console.log('CustomPoiService: Creando POI con datos:', poiData);
 
-  return new Promise((resolve, reject) => {
-    this.httpService.createCustomPoi(poiData).subscribe({
-      next: (response) => {
-        if (response.success && response.poi) {
-          const customPoi = this.formatCustomPoi(response.poi);
-          console.log('CustomPoiService: POI creado exitosamente:', customPoi.name);
-          resolve(customPoi);
-        } else {
-          reject(new Error(response.message || 'Error creando POI'));
+    return new Promise((resolve, reject) => {
+      this.httpService.createCustomPoi(poiData).subscribe({
+        next: (response) => {
+          if (response.success && response.poi) {
+            const customPoi = this.formatCustomPoi(response.poi);
+            console.log('CustomPoiService: POI creado exitosamente:', customPoi.name);
+            resolve(customPoi);
+          } else {
+            reject(new Error(response.message || 'Error creando POI'));
+          }
+        },
+        error: (error) => {
+          console.error('CustomPoiService: Error creando POI:', error);
+          reject(new Error(error.message || 'Error de conexión al crear POI'));
         }
-      },
-      error: (error) => {
-        console.error('CustomPoiService: Error creando POI:', error);
-        reject(new Error(error.message || 'Error de conexión al crear POI'));
-      }
+      });
     });
-  });
-}
+  }
 
   // Obtener POIs del usuario actual
   getUserCustomPois(userId?: string): Observable<CustomPOI[]> {
@@ -157,26 +236,30 @@ export class CustomPoiService {
     );
   }
 
-  // Búsqueda de POIs personalizados
-  searchCustomPois(query: string, latitude: number, longitude: number, page: number = 1, limit: number = 20): Observable<CustomPOI[]> {
-    const params = {
-      page,
-      limit,
-      lat: latitude,
-      lng: longitude,
-      radius: 10000 // 10km por defecto
-    };
-
-    return this.getPublicCustomPois(params).pipe(
-      map(pois => {
-        if (!query.trim()) return pois;
+  // ✅ CORREGIR: Búsqueda de POIs personalizados
+  searchCustomPois(query: string, userLatitude?: number, userLongitude?: number): Observable<CustomPOI[]> {
+    return this.getAllCustomPois().pipe(
+      map(allPois => {
+        const normalizedQuery = query.toLowerCase().trim();
         
-        const searchTerm = query.toLowerCase();
-        return pois.filter(poi => 
-          poi.name.toLowerCase().includes(searchTerm) ||
-          poi.description.toLowerCase().includes(searchTerm) ||
-          poi.category.toLowerCase().includes(searchTerm)
+        let results = allPois.filter(poi => 
+          poi.isPublic && (
+            poi.name.toLowerCase().includes(normalizedQuery) ||
+            poi.description.toLowerCase().includes(normalizedQuery) ||
+            poi.category.toLowerCase().includes(normalizedQuery)
+          )
         );
+
+        // Ordenar por distancia si se proporciona ubicación del usuario
+        if (userLatitude && userLongitude) {
+          results.sort((a, b) => {
+            const distanceA = this.calculateDistance(userLatitude, userLongitude, a.latitude, a.longitude);
+            const distanceB = this.calculateDistance(userLatitude, userLongitude, b.latitude, b.longitude);
+            return distanceA - distanceB;
+          });
+        }
+
+        return results;
       })
     );
   }

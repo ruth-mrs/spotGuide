@@ -145,27 +145,46 @@ export class AppComponent implements OnInit {
     console.log('Search change (not used):', query);
   }
 
-  // Método principal que ejecuta la búsqueda SOLO cuando se envía (Enter o botón)
   onSearchSubmit(query: string) {
-    console.log('Búsqueda enviada desde toolbar:', query);
+    console.log('AppComponent: Búsqueda enviada desde toolbar:', query);
     
-    // Validar que el query tenga contenido mínimo
+    const currentUrl = this.router.url;
+    
+    // Validar query mínimo
     if (query.trim().length === 0) {
-      // Si está vacío, navegar a POIs sin filtros
-      this.router.navigate(['/pois']);
-      return;
+      if (currentUrl.includes('/profile')) {
+        // En perfil, limpiar filtros
+        this.broadcastSearchToProfile('');
+        return;
+      } else {
+        // En otras vistas, ir a POIs sin filtros
+        this.router.navigate(['/pois']);
+        return;
+      }
     }
 
     if (query.trim().length < 2) {
-      console.log('Búsqueda demasiado corta, se requieren al menos 2 caracteres');
+      console.log('AppComponent: Búsqueda demasiado corta');
       return;
     }
 
-    // Actualizar la ubicación en el servicio de búsqueda
+    // Actualizar ubicación en servicio
     this.searchService.updateSearchLocation(this.currentLocation);
     
-    // Ejecutar búsqueda global que siempre redirige a /pois con los resultados
-    this.performGlobalSearch(query.trim());
+    // COMPORTAMIENTO SEGÚN LA VISTA
+    if (currentUrl.includes('/profile')) {
+      // Búsqueda local en perfil
+      console.log('AppComponent: Búsqueda local en perfil');
+      this.broadcastSearchToProfile(query.trim());
+    } else {
+      // Búsqueda global → siempre a poi-list
+      this.performGlobalSearch(query.trim());
+    }
+  }
+
+  private broadcastSearchToProfile(query: string) {
+    // Usar un servicio compartido o EventEmitter
+    this.searchService.setProfileSearchQuery(query);
   }
 
   // Método que realiza la búsqueda usando FoursquareService y datos locales

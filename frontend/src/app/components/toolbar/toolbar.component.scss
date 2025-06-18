@@ -12,7 +12,7 @@
 }
 
 .back-btn {
-  --background: rgba(0, 0, 0, 0.3);
+  --background: rgba(0, 0, 0, 0.5);
   --color: #fff;
   --border-radius: 50%;
   margin: 8px;
@@ -28,20 +28,16 @@
   --padding-start: 0.7em;
   --padding-end: 0.7em;
   position: relative;
-  
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   
   &:hover {
-    --background: rgba(0, 0, 0, 0.4);
+    --background: rgba(0, 0, 0, 0.6);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   }
   
   &:active {
     transform: translateY(0);
-    --background: rgba(0, 0, 0, 0.5);
+    --background: rgba(0, 0, 0, 0.65);
   }
   
   .icon-back {
@@ -66,7 +62,7 @@
 }
 
 .custom-searchbar {
-  --background: rgba(0, 0, 0, 0.25);
+  --background: rgba(0, 0, 0, 0.5);
   --color: #fff;
   --placeholder-color: rgba(255, 255, 255, 0.7);
   --border-radius: 25px;
@@ -76,21 +72,15 @@
   margin: 0;
   height: 44px;
   position: relative;
-  
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   
   &:hover {
-    --background: rgba(0, 0, 0, 0.3);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    --background: rgba(0, 0, 0, 0.6);
   }
   
   &:focus-within {
-    --background: rgba(0, 0, 0, 0.35);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-  }
+    --background: rgba(0, 0, 0, 0.65);
+    border-color: rgba(255, 255, 255, 0.2);  }
 }
 
 .search-submit-btn {
@@ -105,15 +95,11 @@
   --padding-bottom: 0;
   --padding-start: 0;
   --padding-end: 0;
-  
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
   
   &:not([disabled]):hover {
     --background: rgba(102, 126, 234, 1);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
   
   &:not([disabled]):active {
@@ -122,13 +108,12 @@
   }
   
   &[disabled] {
-    --background: rgba(102, 126, 234, 0.3);
+    --background: rgba(102, 126, 234, 0.7);
     opacity: 0.5;
     cursor: not-allowed;
     
     &:hover {
       transform: none;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
   }
   
@@ -239,11 +224,9 @@ ion-searchbar.custom-searchbar {
   transition: transform 0.2s ease;
 }
 
-// Efecto visual cuando se está escribiendo
 .search-form:focus-within {
   .search-submit-btn:not([disabled]) {
     --background: rgba(102, 126, 234, 1);
-    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
   }
 }
 
@@ -258,7 +241,6 @@ ion-searchbar.custom-searchbar {
     right: -2px;
     width: 8px;
     height: 8px;
-    background: #4CAF50;
     border-radius: 50%;
     opacity: 0;
     transition: opacity 0.3s ease;

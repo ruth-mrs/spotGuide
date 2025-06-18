@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { HttpService } from './http.service';
 import { AuthService } from './auth.service';
@@ -25,21 +25,27 @@ export interface FavoritePoi {
   providedIn: 'root'
 })
 export class FavoritesService {
+  private httpService = inject(HttpService);
+  private authService = inject(AuthService);
+
   private favoritesSubject = new BehaviorSubject<FavoritePoi[]>([]);
   public favorites$ = this.favoritesSubject.asObservable();
 
   // Cache local para verificación rápida
   private favoriteIds = new Set<string>();
 
-  constructor(
-    private httpService: HttpService,
-    private authService: AuthService
-  ) {
-    // Cargar favoritos al inicializar si hay usuario
-    this.authService.isAuthenticated$.subscribe(isAuth => {
-      if (isAuth) {
+  constructor() {
+    console.log('FavoritesService: Inicializando servicio de favoritos');
+    
+    // CORREGIR: Escuchar cambios de autenticación desde AuthService
+    this.authService.currentUser$.subscribe(user => {
+      console.log('FavoritesService: Estado de usuario cambió:', user ? user.name : 'No loggeado');
+      
+      if (user) {
+        console.log('FavoritesService: Usuario loggeado, cargando favoritos');
         this.loadUserFavorites();
       } else {
+        console.log('FavoritesService: Usuario desloggeado, limpiando favoritos');
         this.clearFavorites();
       }
     });
@@ -47,21 +53,31 @@ export class FavoritesService {
 
   // Cargar favoritos del usuario
   loadUserFavorites(): void {
-    if (!this.authService.isLoggedIn()) {
+    // CORREGIR: Usar AuthService para obtener usuario actual
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      console.log('FavoritesService: No hay usuario actual para cargar favoritos');
       return;
     }
 
+    console.log('FavoritesService: Cargando favoritos del servidor para:', currentUser.name);
+
     this.httpService.getUserFavorites().subscribe({
       next: (favorites) => {
+        console.log(`FavoritesService: ${favorites.length} favoritos recibidos del servidor:`, favorites);
+        
         const formattedFavorites = favorites.map(fav => ({
           ...fav,
           savedAt: new Date(fav.savedAt)
         }));
         
         this.favoritesSubject.next(formattedFavorites);
-        this.favoriteIds = new Set(favorites.map(f => f.id));
         
-        console.log(`FavoritesService: ${favorites.length} favoritos cargados`);
+        // Actualizar cache de IDs
+        this.favoriteIds.clear();
+        favorites.forEach(fav => this.favoriteIds.add(fav.id));
+        
+        console.log('FavoritesService: IDs en cache:', Array.from(this.favoriteIds));
       },
       error: (error) => {
         console.error('FavoritesService: Error cargando favoritos:', error);
@@ -71,7 +87,7 @@ export class FavoritesService {
     });
   }
 
-  // Toggle favorito
+  // Toggle favorito - CORREGIDO
   toggleFavorite(poiData: {
     id: string;
     name: string;
@@ -84,7 +100,13 @@ export class FavoritesService {
     isCustom?: boolean;
   }): Observable<{ success: boolean; isFavorite: boolean; message: string }> {
     
-    if (!this.authService.isLoggedIn()) {
+    console.log('=== INICIO TOGGLE FAVORITO ===');
+    console.log('FavoritesService: POI:', poiData.name, 'ID:', poiData.id);
+    
+    // CORREGIR: Usar AuthService para verificar autenticación
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      console.log('FavoritesService: ❌ Usuario no autenticado');
       return of({
         success: false,
         isFavorite: false,
@@ -92,6 +114,9 @@ export class FavoritesService {
       });
     }
 
+    console.log('FavoritesService: ✅ Usuario autenticado:', currentUser.name, 'ID:', currentUser.id);
+
+    // Preparar datos para el backend
     const favoriteData = {
       poiId: poiData.id,
       poiData: {
@@ -106,55 +131,85 @@ export class FavoritesService {
       }
     };
 
+    console.log('FavoritesService: 📤 Enviando al backend:', favoriteData);
+
     return this.httpService.toggleFavorite(favoriteData).pipe(
       tap(response => {
+        console.log('FavoritesService: 📥 Respuesta del backend:', response);
+        
         if (response.success) {
+          console.log('FavoritesService: ✅ Toggle exitoso, isFavorite:', response.isFavorite);
+          
+          // Actualizar cache local
           if (response.isFavorite) {
             this.favoriteIds.add(poiData.id);
+            console.log('FavoritesService: ➕ Añadido al cache local');
           } else {
             this.favoriteIds.delete(poiData.id);
+            console.log('FavoritesService: ➖ Eliminado del cache local');
           }
-          // Recargar favoritos para mantener sincronización
-          this.loadUserFavorites();
+          
+          console.log('FavoritesService: 📋 Cache actual:', Array.from(this.favoriteIds));
+          
+          // Recargar favoritos para sincronizar
+          console.log('FavoritesService: 🔄 Recargando favoritos...');
+          setTimeout(() => this.loadUserFavorites(), 1000);
+        } else {
+          console.log('FavoritesService: ❌ Toggle falló:', response.message);
         }
       }),
       map(response => ({
         success: response.success,
         isFavorite: response.isFavorite || false,
-        message: response.message
+        message: response.message || 'Error desconocido'
       })),
       catchError(error => {
-        console.error('FavoritesService: Error toggle favorito:', error);
+        console.error('FavoritesService: 💥 Error en toggle:', error);
         return of({
           success: false,
-          isFavorite: false,
-          message: error.message || 'Error actualizando favorito'
+          isFavorite: this.isFavorite(poiData.id),
+          message: 'Error de conexión'
         });
+      }),
+      tap(() => {
+        console.log('=== FIN TOGGLE FAVORITO ===');
       })
     );
   }
 
-  // Verificar si un POI es favorito
+  // Verificar si un POI es favorito (cache local)
   isFavorite(poiId: string): boolean {
-    return this.favoriteIds.has(poiId);
+    const result = this.favoriteIds.has(poiId);
+    console.log(`FavoritesService: Verificar favorito ${poiId}:`, result);
+    return result;
   }
 
-  // Verificar favorito desde servidor
+  // Verificar favorito desde servidor - CORREGIDO
   checkFavorite(poiId: string): Observable<boolean> {
-    if (!this.authService.isLoggedIn()) {
+    console.log('FavoritesService: Verificando favorito en servidor:', poiId);
+    
+    // CORREGIR: Usar AuthService
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser) {
+      console.log('FavoritesService: No hay usuario para verificar favorito');
       return of(false);
     }
 
     return this.httpService.checkFavorite(poiId).pipe(
       map(response => response.isFavorite),
       tap(isFavorite => {
+        console.log(`FavoritesService: POI ${poiId} es favorito (servidor):`, isFavorite);
+        // Actualizar cache local
         if (isFavorite) {
           this.favoriteIds.add(poiId);
         } else {
           this.favoriteIds.delete(poiId);
         }
       }),
-      catchError(() => of(false))
+      catchError(error => {
+        console.error('FavoritesService: Error verificando favorito:', error);
+        return of(false);
+      })
     );
   }
 
@@ -165,7 +220,16 @@ export class FavoritesService {
 
   // Limpiar favoritos (logout)
   private clearFavorites(): void {
+    console.log('FavoritesService: Limpiando favoritos (logout)');
     this.favoritesSubject.next([]);
     this.favoriteIds.clear();
+  }
+
+  // Método para sincronizar estado de favoritos en POIs
+  syncFavoriteStatus(pois: any[]): any[] {
+    return pois.map(poi => ({
+      ...poi,
+      isFavorite: this.isFavorite(poi.id)
+    }));
   }
 }

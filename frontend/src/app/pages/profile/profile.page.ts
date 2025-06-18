@@ -1,14 +1,13 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   IonContent, IonAvatar, IonButton, IonIcon, IonSpinner,
   IonCard, IonCardContent, IonCardHeader, IonCardTitle,
   IonFab, IonFabButton, IonItemOptions, IonItem, IonItemSliding,
   IonRefresher, IonRefresherContent, IonSegment, IonSegmentButton,
-  IonLabel, IonList, IonItemOption
-} from '@ionic/angular/standalone';
+  IonLabel, IonList, IonItemOption, IonChip } from '@ionic/angular/standalone';
 
 import { PoiCardComponent, POI } from '../../components/poi-card/poi-card.component';
 import { AuthService, User } from '../../services/auth.service';
@@ -17,6 +16,7 @@ import { FavoritesService, FavoritePoi } from '../../services/favorites.service'
 import { CommentsService } from '../../services/comments.service';
 import { HttpService } from '../../services/http.service';
 import { ToastService } from '../../services/toast.service';
+import { SearchService } from '../../services/search.service';
 
 // Interface local para POIs guardados compatible
 interface SavedPoi extends FavoritePoi {
@@ -29,7 +29,7 @@ interface SavedPoi extends FavoritePoi {
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [
+  imports: [IonChip, 
     IonContent, IonAvatar, IonButton, IonIcon, IonSpinner,
     IonFab, IonFabButton, IonItemOptions, IonItem, IonItemSliding,
     IonRefresher, IonRefresherContent, IonSegment, IonSegmentButton,
@@ -41,7 +41,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private customPoiService = inject(CustomPoiService);
   private favoritesService = inject(FavoritesService);
-  private commentsService = inject(CommentsService);
+  private searchService = inject(SearchService);
   private httpService = inject(HttpService);
   private router = inject(Router);
   private toastService = inject(ToastService);
@@ -52,6 +52,10 @@ export class ProfilePage implements OnInit, OnDestroy {
     memberSince: string;
   } | null = null;
 
+  searchQuery = ''; // Nueva propiedad para el filtro
+  filteredPublishedPois: (CustomPOI & { canEdit: boolean })[] = [];
+  filteredSavedPois: SavedPoi[] = [];
+
   publishedPois: (CustomPOI & { canEdit: boolean })[] = [];
   savedPois: SavedPoi[] = [];
   
@@ -61,9 +65,13 @@ export class ProfilePage implements OnInit, OnDestroy {
   isLoading = false;
   
   private subscription = new Subscription();
+  private profileSearchSubject = new BehaviorSubject<string>('');
+  public profileSearch$ = this.profileSearchSubject.asObservable();
 
   ngOnInit() {
     this.loadUserData();
+    this.applyFilters();
+    this.subscribeToProfileSearch();
   }
 
   ngOnDestroy() {
@@ -109,6 +117,28 @@ export class ProfilePage implements OnInit, OnDestroy {
     );
   }
 
+  private applyFilters() {
+    // Filtrar POIs publicados
+    if (this.searchQuery) {
+      this.filteredPublishedPois = this.publishedPois.filter(poi =>
+        poi.name.toLowerCase().includes(this.searchQuery) ||
+        poi.description.toLowerCase().includes(this.searchQuery) ||
+        poi.category.toLowerCase().includes(this.searchQuery)
+      );
+
+      this.filteredSavedPois = this.savedPois.filter(poi =>
+        poi.name.toLowerCase().includes(this.searchQuery) ||
+        poi.description.toLowerCase().includes(this.searchQuery) ||
+        poi.category.toLowerCase().includes(this.searchQuery)
+      );
+    } else {
+      this.filteredPublishedPois = [...this.publishedPois];
+      this.filteredSavedPois = [...this.savedPois];
+    }
+
+    console.log(`ProfilePage: Filtrados - ${this.filteredPublishedPois.length} publicados, ${this.filteredSavedPois.length} guardados`);
+  }
+
   private loadPublishedPois() {
     this.isLoading = true;
     
@@ -120,6 +150,7 @@ export class ProfilePage implements OnInit, OnDestroy {
             isCustom: true as const,
             canEdit: true
           }));
+          this.applyFilters(); // Aplicar filtros después de cargar
           console.log(`ProfilePage: ${pois.length} POIs publicados cargados`);
           this.isLoading = false;
         },
@@ -141,6 +172,7 @@ export class ProfilePage implements OnInit, OnDestroy {
             poiType: fav.poiType || 'foursquare' as 'foursquare' | 'custom',
             savedAt: fav.savedAt
           }));
+          this.applyFilters(); // Aplicar filtros después de cargar
           console.log(`ProfilePage: ${favorites.length} POIs guardados cargados`);
         },
         error: (error) => {
@@ -170,11 +202,9 @@ export class ProfilePage implements OnInit, OnDestroy {
     console.log('ProfilePage: View mode changed to:', this.viewMode);
   }
 
-  // Editar perfil
-  onEditProfile() {
-    console.log('ProfilePage: Navegando a editar perfil');
-    this.router.navigate(['/edit-profile']);
-  }
+ onEditProfile() {
+  this.router.navigate(['/edit-profile']);
+}
 
   // POI click handlers
   onPoiClick(poi: CustomPOI | SavedPoi | POI) {
@@ -196,6 +226,28 @@ export class ProfilePage implements OnInit, OnDestroy {
     if ('isCustom' in poi && poi.isCustom) {
       this.router.navigate(['/edit-poi', poi.id]);
     }
+  }
+
+   private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): string {
+    const R = 6371;
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLng = this.deg2rad(lng2 - lng1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)}m`;
+    } else {
+      return `${distance.toFixed(1)}km`;
+    }
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI/180);
   }
 
   onFavoriteToggle(poi: CustomPOI | SavedPoi | POI) {
@@ -308,9 +360,8 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.toastService.info(message);
   }
 
-  // Getters
   get currentPois(): (CustomPOI | SavedPoi)[] {
-    return this.selectedSegment === 'published' ? this.publishedPois : this.savedPois;
+    return this.selectedSegment === 'published' ? this.filteredPublishedPois : this.filteredSavedPois;
   }
 
   get hasNoPois(): boolean {
@@ -335,11 +386,46 @@ export class ProfilePage implements OnInit, OnDestroy {
       : 'Explorar POIs';
   }
 
+  private subscribeToProfileSearch() {
+    this.subscription.add(
+      this.searchService.profileSearch$.subscribe(query => {
+        if (query !== this.searchQuery) { // Evitar loops infinitos
+          this.onSearchFromToolbar(query);
+        }
+      })
+    );
+  }
+
   onEmptyStateAction() {
     if (this.selectedSegment === 'published') {
       this.router.navigate(['/add-poi']);
     } else {
       this.router.navigate(['/pois']);
     }
+  }
+
+  onSearchFromToolbar(query: string) {
+    this.searchQuery = query.toLowerCase().trim();
+    console.log('ProfilePage: Filtrar POIs con query:', this.searchQuery);
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchQuery = '';
+    this.applyFilters();
+    // Limpiar también en el servicio
+    this.searchService.clearProfileSearch();
+  }
+
+// Método para establecer búsqueda de perfil
+  setProfileSearchQuery(query: string): void {
+    this.profileSearchSubject.next(query);
+    console.log('SearchService: Profile search query set:', query);
+  }
+
+  // Método para limpiar búsqueda de perfil
+  clearProfileSearch(): void {
+    this.profileSearchSubject.next('');
+    console.log('SearchService: Profile search cleared');
   }
 }

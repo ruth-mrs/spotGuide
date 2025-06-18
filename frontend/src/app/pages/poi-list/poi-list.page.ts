@@ -2,8 +2,9 @@ import { Component, OnInit, ViewChild, inject, OnDestroy, ChangeDetectorRef } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { IonContent, IonButton, IonIcon, IonSelect, IonSelectOption, IonItem, IonLabel, IonSpinner, IonInfiniteScroll, IonInfiniteScrollContent } from '@ionic/angular/standalone';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest, forkJoin } from 'rxjs';
 
 import { CustomButtonComponent } from '../../components/custom-button/custom-button.component';
 import { PoiCardComponent, POI } from '../../components/poi-card/poi-card.component';
@@ -11,8 +12,8 @@ import { MapComponent, MapMarker } from '../../components/map/map.component';
 import { SearchService } from '../../services/search.service';
 import { FoursquareService } from '../../services/foursquare.service';
 import { PaginatedResponse } from '../../interfaces/search'; 
-
-// ELIMINAR LA INTERFACE LOCAL PaginatedResponse
+import { FavoritesService } from '../../services/favorites.service';
+import { HttpService } from 'src/app/services/http.service';
 
 @Component({
   selector: 'app-poi-list',
@@ -32,8 +33,14 @@ export class PoiListPage implements OnInit, OnDestroy {
   private searchService = inject(SearchService);
   private foursquareService = inject(FoursquareService);
   private cdr = inject(ChangeDetectorRef);
+  private favoritesService = inject(FavoritesService); 
+  private httpService = inject(HttpService);
+  private http = inject(HttpClient);
   
   @ViewChild(MapComponent) mapComponent!: MapComponent;
+  
+  // Agregar baseUrl
+  private baseUrl = 'http://localhost:3000/api';
   
   selectedFilter = 'all';
   isLoading = false;
@@ -67,10 +74,22 @@ export class PoiListPage implements OnInit, OnDestroy {
     { value: 'accommodation', label: 'Alojamiento' }
   ];
 
-  // Resto del código permanece igual...
   ngOnInit() {
     console.log('PoiListPage: Inicializando...');
     
+    this.favoritesService.loadUserFavorites();
+  
+    // Escuchar cambios en favoritos globalmente
+    this.subscription.add(
+      this.favoritesService.favorites$.subscribe(favorites => {
+        console.log('PoiListPage: Favoritos actualizados globalmente:', favorites.length);
+        // Sincronizar estado cuando cambien los favoritos
+        if (this.pois.length > 0) {
+          this.syncFavoritesState();
+        }
+      })
+    );
+  
     this.subscription.add(
       this.route.queryParams.subscribe(params => {
         console.log('PoiListPage: Parámetros recibidos:', params);
@@ -136,59 +155,54 @@ export class PoiListPage implements OnInit, OnDestroy {
         this.pageSize
       ).subscribe({
         next: (response: PaginatedResponse) => {
-          console.log(`PoiListPage: Búsqueda completada, ${response.pois.length} resultados en esta página`);
-          console.log('Nuevos POIs recibidos:', response.pois.map((p: POI) => ({ id: p.id, name: p.name })));
+          console.log(`PoiListPage: Página ${this.currentPage} - ${response.pois.length} resultados`);
+          console.log('PoiListPage: Respuesta de búsqueda:', response);
           
           if (this.currentPage === 1) {
-            this.pois = [...response.pois];
-            this.consecutiveEmptyPages = response.pois.length === 0 ? 1 : 0;
-            console.log(`PoiListPage: Primera página - ${this.pois.length} POIs cargados`);
+            this.pois = response.pois;
           } else {
-            // Verificar que no haya duplicados antes de añadir
             const newPois = response.pois.filter((newPoi: POI) => 
               !this.pois.some(existingPoi => existingPoi.id === newPoi.id)
             );
             
             if (newPois.length === 0) {
               this.consecutiveEmptyPages++;
-              console.log(`PoiListPage: Página ${this.currentPage} sin POIs nuevos. Páginas vacías consecutivas: ${this.consecutiveEmptyPages}`);
             } else {
               this.consecutiveEmptyPages = 0;
               this.pois = [...this.pois, ...newPois];
-              console.log(`PoiListPage: Página ${this.currentPage} - ${newPois.length} POIs nuevos añadidos. Total: ${this.pois.length}`);
             }
           }
           
           this.totalPois = response.total;
           this.hasMoreData = response.hasMore && this.consecutiveEmptyPages < this.maxEmptyPages;
           
+          console.log(`PoiListPage: POIs de búsqueda finales: ${this.pois.length}`);
+          
+          this.syncFavoritesState();
           this.applyFilters();
           this.isLoading = false;
           this.isLoadingMore = false;
-          
-          // FORZAR DETECCIÓN DE CAMBIOS
           this.cdr.detectChanges();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('PoiListPage: Error en la búsqueda:', error);
           this.isLoading = false;
           this.isLoadingMore = false;
-          if (this.currentPage === 1) {
-            this.pois = [];
-            this.applyFilters();
-          }
+          this.pois = [];
+          this.applyFilters();
           this.cdr.detectChanges();
         }
       })
     );
   }
 
-  private loadNearbyPois() {
+   private loadNearbyPois() {
     this.isLoading = this.currentPage === 1;
     this.isLoadingMore = this.currentPage > 1;
     
     console.log(`PoiListPage: Cargando POIs cercanos - Página ${this.currentPage}`);
     
+    // TEMPORALMENTE SOLO FOURSQUARE PARA DEBUGGEAR
     this.subscription.add(
       this.searchService.getSearchResults(
         '',
@@ -198,51 +212,172 @@ export class PoiListPage implements OnInit, OnDestroy {
         this.pageSize
       ).subscribe({
         next: (response: PaginatedResponse) => {
-          console.log(`PoiListPage: POIs cercanos cargados, ${response.pois.length} encontrados en esta página`);
-          console.log('Nuevos POIs cercanos recibidos:', response.pois.map((p: POI) => ({ id: p.id, name: p.name })));
+          console.log(`PoiListPage: Página ${this.currentPage} cercanos - ${response.pois.length} encontrados`);
+          console.log('PoiListPage: Respuesta completa:', response);
           
           if (this.currentPage === 1) {
-            this.pois = [...response.pois];
-            this.consecutiveEmptyPages = response.pois.length === 0 ? 1 : 0;
-            console.log(`PoiListPage: Primera página cercanos - ${this.pois.length} POIs cargados`);
+            this.pois = response.pois;
           } else {
-            // Verificar que no haya duplicados antes de añadir
             const newPois = response.pois.filter((newPoi: POI) => 
               !this.pois.some(existingPoi => existingPoi.id === newPoi.id)
             );
             
             if (newPois.length === 0) {
               this.consecutiveEmptyPages++;
-              console.log(`PoiListPage: Página ${this.currentPage} sin POIs nuevos. Páginas vacías consecutivas: ${this.consecutiveEmptyPages}`);
             } else {
               this.consecutiveEmptyPages = 0;
               this.pois = [...this.pois, ...newPois];
-              console.log(`PoiListPage: Página ${this.currentPage} cercanos - ${newPois.length} POIs nuevos añadidos. Total: ${this.pois.length}`);
             }
           }
           
           this.totalPois = response.total;
           this.hasMoreData = response.hasMore && this.consecutiveEmptyPages < this.maxEmptyPages;
           
+          console.log(`PoiListPage: POIs finales: ${this.pois.length}`);
+          
+          this.syncFavoritesState();
           this.applyFilters();
           this.isLoading = false;
           this.isLoadingMore = false;
-          
-          // FORZAR DETECCIÓN DE CAMBIOS
           this.cdr.detectChanges();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('PoiListPage: Error cargando POIs cercanos:', error);
           this.isLoading = false;
           this.isLoadingMore = false;
-          if (this.currentPage === 1) {
-            this.pois = [];
-            this.applyFilters();
-          }
           this.cdr.detectChanges();
         }
       })
     );
+  }
+
+  private filterCustomPoisByDistance(customPois: POI[]): POI[] {
+    // Filtrar Custom POIs por distancia (ejemplo: 5km)
+    const maxDistance = 5000; // 5km en metros
+    
+    return customPois.filter(poi => {
+      if (!poi.latitude || !poi.longitude) return false;
+      
+      const distance = this.calculateDistanceInMeters(
+        this.currentCenter.lat,
+        this.currentCenter.lng,
+        poi.latitude,
+        poi.longitude
+      );
+      
+      return distance <= maxDistance;
+    });
+  }
+
+  private removeDuplicatePois(pois: POI[]): POI[] {
+    const seen = new Set();
+    return pois.filter(poi => {
+      const key = `${poi.id}-${poi.name}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private loadFoursquareOnly() {
+    this.subscription.add(
+      this.searchService.getSearchResults(
+        '',
+        this.currentCenter.lat,
+        this.currentCenter.lng,
+        this.currentPage,
+        this.pageSize
+      ).subscribe({
+        next: (response: PaginatedResponse) => {
+          this.pois = response.pois;
+          this.totalPois = response.total;
+          this.hasMoreData = response.hasMore;
+          
+          this.syncFavoritesState();
+          this.applyFilters();
+          this.isLoading = false;
+          this.isLoadingMore = false;
+          this.cdr.detectChanges();
+        },
+        error: (error: any) => {
+          console.error('PoiListPage: Error cargando Foursquare:', error);
+          this.isLoading = false;
+          this.isLoadingMore = false;
+          this.cdr.detectChanges();
+        }
+      })
+    );
+  }
+
+  private calculateDistanceInMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371e3; // Radio de la Tierra en metros
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lng2-lng1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  }
+
+  // CORREGIR MÉTODO calculateDistance PARA QUE DEVUELVA number EN METROS
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): string {
+    const distanceInMeters = this.calculateDistanceInMeters(lat1, lng1, lat2, lng2);
+    
+    if (distanceInMeters < 1000) {
+      return `${Math.round(distanceInMeters)}m`;
+    } else {
+      return `${(distanceInMeters / 1000).toFixed(1)}km`;
+    }
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI/180);
+  }
+
+  private calculateWalkingTime(poiLat: number, poiLng: number): string {
+    const distanceKm = this.calculateDistanceKm(
+      this.currentCenter.lat,
+      this.currentCenter.lng,
+      poiLat,
+      poiLng
+    );
+    
+    const walkingSpeedKmh = 5; // 5 km/h velocidad promedio caminando
+    const timeHours = distanceKm / walkingSpeedKmh;
+    const totalMinutes = Math.round(timeHours * 60);
+    
+    if (totalMinutes < 1) {
+      return '< 1 min';
+    } else if (totalMinutes < 60) {
+      return `${totalMinutes} min`;
+    } else {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (minutes === 0) {
+        return `${hours}h`;
+      } else {
+        return `${hours}h ${minutes}min`;
+      }
+    }
+  }
+
+  private calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLng = this.deg2rad(lng2 - lng1);
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 
   private infiniteScrollTimeout: any;
@@ -303,7 +438,6 @@ export class PoiListPage implements OnInit, OnDestroy {
           });
 
           if (response.pois.length > 0) {
-            // Filtrar duplicados
             const existingIds = new Set(this.pois.map(p => p.id));
             const newPois = response.pois.filter((poi: POI) => !existingIds.has(poi.id));
             
@@ -311,35 +445,26 @@ export class PoiListPage implements OnInit, OnDestroy {
               this.pois = [...this.pois, ...newPois];
               console.log(`PoiListPage: ${newPois.length} POIs únicos añadidos. Total: ${this.pois.length}`);
               this.consecutiveEmptyPages = 0;
-              this.applyFilters();
+              
+              // AÑADIR SINCRONIZACIÓN DE FAVORITOS
+              this.syncFavoritesState();
             } else {
               this.consecutiveEmptyPages++;
-              console.log(`PoiListPage: Sin POIs únicos. Páginas vacías: ${this.consecutiveEmptyPages}`);
             }
           } else {
             this.consecutiveEmptyPages++;
-            console.log(`PoiListPage: Página vacía ${this.consecutiveEmptyPages}`);
           }
 
-          // Actualizar estado
           this.totalPois = response.total;
           this.hasMoreData = response.hasMore && this.consecutiveEmptyPages < this.maxEmptyPages;
 
-          console.log(`PoiListPage: Nuevo estado:`, {
-            totalPois: this.pois.length,
-            hasMoreData: this.hasMoreData,
-            currentPage: this.currentPage
-          });
-
-          // IMPORTANTE: Finalizar SIEMPRE
+          this.applyFilters();
           this.isLoadingMore = false;
           this.cdr.detectChanges();
           event.target.complete();
 
-          // Deshabilitar si no hay más
           if (!this.hasMoreData) {
             event.target.disabled = true;
-            console.log('PoiListPage: Infinite scroll deshabilitado');
           }
         },
         error: (error) => {
@@ -389,12 +514,85 @@ export class PoiListPage implements OnInit, OnDestroy {
   }
 
   onFavoriteToggle(poi: POI) {
-    const index = this.pois.findIndex(p => p.id === poi.id);
-    if (index !== -1) {
-      this.pois[index].isFavorite = !this.pois[index].isFavorite;
-      console.log(`PoiListPage: Favorito toggled para ${poi.name}:`, this.pois[index].isFavorite);
-      this.applyFilters();
+    console.log('=== POI LIST: TOGGLE FAVORITO ===');
+    console.log('PoiListPage: Toggle favorito para:', poi.name, 'ID:', poi.id);
+    console.log('PoiListPage: Estado actual:', poi.isFavorite);
+
+    // Encontrar el POI en el array principal
+    const mainIndex = this.pois.findIndex(p => p.id === poi.id);
+    // Encontrar el POI en el array filtrado
+    const filteredIndex = this.filteredPois.findIndex(p => p.id === poi.id);
+    
+    if (mainIndex === -1) {
+      console.error('PoiListPage: POI no encontrado en el array principal');
+      return;
     }
+
+    // Actualización optimista - cambiar inmediatamente en ambos arrays
+    const previousState = this.pois[mainIndex].isFavorite;
+    this.pois[mainIndex].isFavorite = !previousState;
+    
+    if (filteredIndex !== -1) {
+      this.filteredPois[filteredIndex].isFavorite = !previousState;
+    }
+    
+    console.log('PoiListPage: Actualización optimista - Nuevo estado UI:', this.pois[mainIndex].isFavorite);
+
+    // Preparar datos del POI para el servicio
+    const poiData = {
+      id: poi.id,
+      name: poi.name,
+      description: poi.description,
+      image: poi.image,
+      category: poi.category,
+      latitude: poi.latitude,
+      longitude: poi.longitude,
+      rating: poi.rating,
+      isCustom: 'isCustom' in poi ? (poi as any).isCustom : false
+    };
+
+    console.log('PoiListPage: Enviando datos al FavoritesService:', poiData);
+
+    // Llamar al servicio para persistir en backend
+    this.subscription.add(
+      this.favoritesService.toggleFavorite(poiData).subscribe({
+        next: (result) => {
+          console.log('PoiListPage: Resultado del servicio:', result);
+          
+          if (result.success) {
+            // Confirmar el estado desde el servidor en ambos arrays
+            this.pois[mainIndex].isFavorite = result.isFavorite;
+            if (filteredIndex !== -1) {
+              this.filteredPois[filteredIndex].isFavorite = result.isFavorite;
+            }
+            
+            console.log('PoiListPage: ✅ Estado confirmado desde servidor:', result.isFavorite);
+            
+            // Actualizar marcadores del mapa
+            this.updateMapMarkers();
+            
+          } else {
+            // Si falla, revertir el cambio optimista en ambos arrays
+            this.pois[mainIndex].isFavorite = previousState;
+            if (filteredIndex !== -1) {
+              this.filteredPois[filteredIndex].isFavorite = previousState;
+            }
+            console.log('PoiListPage: ↩️ Revirtiendo cambio optimista debido a error');
+          }
+          
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          // Si hay error, revertir el cambio optimista en ambos arrays
+          this.pois[mainIndex].isFavorite = previousState;
+          if (filteredIndex !== -1) {
+            this.filteredPois[filteredIndex].isFavorite = previousState;
+          }
+          console.error('PoiListPage: 💥 Error en toggle, revirtiendo:', error);
+          this.cdr.detectChanges();
+        }
+      })
+    );
   }
 
   onMapClick(coordinates: { lat: number; lng: number }) {
@@ -483,7 +681,7 @@ export class PoiListPage implements OnInit, OnDestroy {
       rating: poi.rating,
       distance: poi.distance,
       isSelected: selectedId === poi.id,
-      // AÑADIR VERIFICACIÓN DE POIS PERSONALIZADOS
+      isFavorite: poi.isFavorite, // AÑADIR ESTADO DE FAVORITO
       isCustom: 'isCustom' in poi ? (poi as any).isCustom : false
     }));
     
@@ -508,5 +706,22 @@ export class PoiListPage implements OnInit, OnDestroy {
       return `Buscando en área más amplia... (${this.consecutiveEmptyPages}/${this.maxEmptyPages})`;
     }
     return 'Cargando más puntos...';
+  }
+
+  private syncFavoritesState() {
+    console.log('PoiListPage: Sincronizando estado de favoritos...');
+    console.log('PoiListPage: POIs antes de sincronizar:', this.pois.length);
+    
+    // Usar el método del FavoritesService para sincronizar
+    this.pois = this.favoritesService.syncFavoriteStatus(this.pois);
+    
+    console.log('PoiListPage: Estado de favoritos sincronizado');
+    
+    // Actualizar la vista
+    this.applyFilters();
+    this.updateMapMarkers();
+    
+    // Forzar detección de cambios
+    this.cdr.detectChanges();
   }
 }

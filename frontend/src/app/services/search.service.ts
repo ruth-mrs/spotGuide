@@ -1,19 +1,22 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { FoursquareService } from './foursquare.service';
 import { POI } from '../components/poi-card/poi-card.component';
 import { CustomPoiService, CustomPOI } from './custom-poi.service';
 import { PaginatedResponse, SearchResponse, SearchLocation } from '../interfaces/search';
+// Corregir el import - es FavoritePoi, no SavedPoi
+import { FavoritePoi } from './favorites.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SearchService {
-  private router = inject(Router);
   private foursquareService = inject(FoursquareService);
   private customPoiService = inject(CustomPoiService);
+  private profileSearchSubject = new BehaviorSubject<string>('');
+  public profileSearch$ = this.profileSearchSubject.asObservable();
 
   private lastSearchQuery: string = '';
   private lastSearchLocation: SearchLocation = { lat: 36.8377, lng: -2.4585 };
@@ -117,8 +120,74 @@ export class SearchService {
     console.log('SearchService: Búsqueda limpiada');
   }
 
+  setProfileSearchQuery(query: string): void {
+    this.profileSearchSubject.next(query);
+    console.log('SearchService: Profile search query set:', query);
+  }
+
+  // Método para limpiar búsqueda de perfil
+  clearProfileSearch(): void {
+    this.profileSearchSubject.next('');
+    console.log('SearchService: Profile search cleared');
+  }
+
   hasActiveSearch(): boolean {
     return this.lastSearchQuery.length > 0;
+  }
+
+  // MÉTODO PRINCIPAL PARA BÚSQUEDA EN PERFIL - CORREGIDO
+  searchUserPois(
+    query: string,
+    userCustomPois: CustomPOI[] = [],
+    userFavorites: FavoritePoi[] = [] // Cambiar SavedPoi por FavoritePoi
+  ): { customPois: CustomPOI[], favoritePois: FavoritePoi[] } { // Cambiar SavedPoi por FavoritePoi
+    const normalizedQuery = query.toLowerCase().trim();
+    
+    console.log(`SearchService: Filtrando POIs del usuario con query: "${query}"`);
+    console.log(`SearchService: Input - ${userCustomPois.length} custom POIs, ${userFavorites.length} favoritos`);
+    
+    if (!normalizedQuery) {
+      // Sin query, devolver todos
+      return {
+        customPois: userCustomPois,
+        favoritePois: userFavorites
+      };
+    }
+    
+    const filteredCustom = userCustomPois.filter(poi =>
+      poi.name.toLowerCase().includes(normalizedQuery) ||
+      poi.description.toLowerCase().includes(normalizedQuery) ||
+      poi.category.toLowerCase().includes(normalizedQuery)
+    );
+    
+    const filteredFavorites = userFavorites.filter(poi =>
+      poi.name.toLowerCase().includes(normalizedQuery) ||
+      poi.description.toLowerCase().includes(normalizedQuery) ||
+      poi.category.toLowerCase().includes(normalizedQuery)
+    );
+    
+    console.log(`SearchService: Resultado filtro - ${filteredCustom.length} custom POIs, ${filteredFavorites.length} favoritos`);
+    
+    return {
+      customPois: filteredCustom,
+      favoritePois: filteredFavorites
+    };
+  }
+
+  // MÉTODO PARA BÚSQUEDA EN CONTEXTO DE RUTAS (futuro) - CORREGIDO
+  searchUserPoisForRoutes(
+    query: string,
+    userCustomPois: CustomPOI[] = [],
+    userFavorites: FavoritePoi[] = [] // Cambiar SavedPoi por FavoritePoi
+  ): { customPois: CustomPOI[], favoritePois: FavoritePoi[] } { // Cambiar SavedPoi por FavoritePoi
+    // Reutilizar la misma lógica que searchUserPois
+    // Pero podríamos añadir filtros adicionales específicos para rutas
+    const result = this.searchUserPois(query, userCustomPois, userFavorites);
+    
+    // Filtros adicionales para rutas (ejemplo: solo POIs con buena accesibilidad)
+    // result.customPois = result.customPois.filter(poi => poi.accessibility);
+    
+    return result;
   }
 
   // MÉTODOS PRIVADOS CORREGIDOS
@@ -126,15 +195,15 @@ export class SearchService {
   private getRelevantCustomPoisObservable(query: string, latitude: number, longitude: number, limit: number): Observable<CustomPOI[]> {
     try {
       if (!query.trim()) {
-        // Sin query, devolver los más cercanos
-        return this.getAllCustomPoisObservable().pipe(
+        // Sin query, devolver los más cercanos - USAR NUEVO MÉTODO
+        return this.customPoiService.getCustomPois().pipe(
           map(allCustomPois => 
             this.sortCustomPoisByDistance(allCustomPois, latitude, longitude).slice(0, Math.floor(limit / 2))
           )
         );
       }
 
-      // Con query, buscar por texto
+      // Con query, buscar por texto - USAR NUEVO MÉTODO
       return this.customPoiService.searchCustomPois(query, latitude, longitude).pipe(
         map(searchResults => searchResults.slice(0, Math.floor(limit / 2)))
       );

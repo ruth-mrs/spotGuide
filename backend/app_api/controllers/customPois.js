@@ -1,5 +1,6 @@
 const CustomPoi = require('../models/customPoi');
 const Favorite = require('../models/favorite');
+const POI = require('../models/poi'); 
 const Comment = require('../models/comment');
 
 // Obtener todos los POIs públicos
@@ -7,11 +8,10 @@ const getPublicPois = async (req, res) => {
   try {
     const { page = 1, limit = 20, lat, lng, radius = 10000 } = req.query;
     
-    let query = { isPublic: true };
-    
-    // Si se proporcionan coordenadas, buscar por proximidad
+    // ✅ QUERY PARA CUSTOM POIS
+    let customQuery = { isPublic: true };
     if (lat && lng) {
-      query.location = {
+      customQuery.location = {
         $near: {
           $geometry: {
             type: 'Point',
@@ -22,14 +22,38 @@ const getPublicPois = async (req, res) => {
       };
     }
 
-    const pois = await CustomPoi.find(query)
-      .populate('createdBy', 'name avatar')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    // ✅ QUERY PARA POIS DE FOURSQUARE EN BD
+    let foursquareQuery = {};
+    if (lat && lng) {
+      foursquareQuery.location = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)]
+          },
+          $maxDistance: parseInt(radius)
+        }
+      };
+    }
 
-    // Verificar favoritos si hay usuario autenticado
-    const formattedPois = await Promise.all(pois.map(async (poi) => {
+    // ✅ OBTENER AMBOS TIPOS DE POIS EN PARALELO
+    const [customPois, foursquarePois] = await Promise.all([
+      CustomPoi.find(customQuery)
+        .populate('createdBy', 'name avatar')
+        .sort({ createdAt: -1 })
+        .limit(Math.ceil(limit / 2))
+        .skip(Math.ceil((page - 1) * limit / 2)),
+      
+      POI.find(foursquareQuery)
+        .sort({ createdAt: -1 })
+        .limit(Math.ceil(limit / 2))
+        .skip(Math.ceil((page - 1) * limit / 2))
+    ]);
+
+    console.log(`📍 Encontrados ${customPois.length} Custom POIs + ${foursquarePois.length} Foursquare POIs`);
+
+    // ✅ FORMATEAR CUSTOM POIS
+    const formattedCustomPois = await Promise.all(customPois.map(async (poi) => {
       let isFavorite = false;
       if (req.user) {
         const favorite = await Favorite.findOne({
@@ -58,24 +82,79 @@ const getPublicPois = async (req, res) => {
         createdAt: poi.createdAt,
         isCustom: true,
         isPublic: poi.isPublic,
+        source: 'user', // ✅ IDENTIFICAR COMO POI DE USUARIO
         totalFavorites: poi.totalFavorites
       };
     }));
 
+    // ✅ FORMATEAR FOURSQUARE POIS
+    const formattedFoursquarePois = await Promise.all(foursquarePois.map(async (poi) => {
+      let isFavorite = false;
+      if (req.user) {
+        const favorite = await Favorite.findOne({
+          userId: req.user._id,
+          poiId: poi._id.toString()
+        });
+        isFavorite = !!favorite;
+      }
+
+      return {
+        id: poi._id,
+        name: poi.name,
+        description: poi.description,
+        category: poi.category,
+        image: poi.image || '',
+        imageType: 'url',
+        latitude: poi.location.coordinates[1],
+        longitude: poi.location.coordinates[0],
+        rating: poi.rating || 0,
+        reviewCount: poi.reviewCount || 0,
+        distance: '0 km',
+        estimatedTime: '0 min',
+        isFavorite,
+        userId: null, // ✅ POIs de Foursquare no tienen usuario específico
+        userName: 'Foursquare',
+        createdAt: poi.createdAt,
+        isCustom: true, // ✅ TRATARLOS COMO CUSTOM PARA EL FRONTEND
+        isPublic: true,
+        source: 'foursquare', // ✅ IDENTIFICAR COMO POI DE FOURSQUARE
+        totalFavorites: 0,
+        // ✅ CAMPOS ADICIONALES DE FOURSQUARE
+        externalId: poi.externalId,
+        address: poi.address,
+        website: poi.website,
+        phone: poi.phone
+      };
+    }));
+
+    // ✅ COMBINAR Y MEZCLAR RESULTADOS
+    const allPois = [...formattedCustomPois, ...formattedFoursquarePois];
+    
+    // ✅ ORDENAR POR FECHA DE CREACIÓN (MÁS RECIENTES PRIMERO)
+    allPois.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // ✅ APLICAR LÍMITE FINAL
+    const finalPois = allPois.slice(0, parseInt(limit));
+
+    console.log(`🎯 Enviando ${finalPois.length} POIs totales (${formattedCustomPois.length} custom + ${formattedFoursquarePois.length} foursquare)`);
+
     res.status(200).json({
       success: true,
-      pois: formattedPois,
+      pois: finalPois,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total: await CustomPoi.countDocuments(query)
+        total: allPois.length,
+        customTotal: formattedCustomPois.length,
+        foursquareTotal: formattedFoursquarePois.length
       }
     });
   } catch (error) {
     console.error('Error getting public POIs:', error);
     res.status(500).json({
       success: false,
-      message: 'Error obteniendo POIs públicos'
+      message: 'Error obteniendo POIs públicos',
+      details: error.message
     });
   }
 };
