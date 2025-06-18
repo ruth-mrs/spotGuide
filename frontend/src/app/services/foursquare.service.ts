@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'; // Añadir HttpParams
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http'; 
 import { Observable, map, catchError, of, forkJoin } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { POI } from '../components/poi-card/poi-card.component';
-import { PaginatedResponse } from '../interfaces/search'; // IMPORTAR DESDE INTERFACES
+import { PaginatedResponse } from '../interfaces/search'; 
 
 interface FoursquareVenue {
   fsq_id: string;

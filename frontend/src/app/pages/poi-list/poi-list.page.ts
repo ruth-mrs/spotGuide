@@ -39,9 +39,6 @@ export class PoiListPage implements OnInit, OnDestroy {
   
   @ViewChild(MapComponent) mapComponent!: MapComponent;
   
-  // Agregar baseUrl
-  private baseUrl = 'http://localhost:3000/api';
-  
   selectedFilter = 'all';
   isLoading = false;
   isLoadingMore = false;
