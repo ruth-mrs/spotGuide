@@ -1,0 +1,35 @@
+# npm audit report
+
+http-proxy-middleware  3.0.0 - 3.0.4
+Severity: moderate
+http-proxy-middleware allows fixRequestBody to proceed even if bodyParser has failed - https://github.com/advisories/GHSA-9gqv-wp59-fq42
+http-proxy-middleware can call writeBody twice because "else if" is not used - https://github.com/advisories/GHSA-4www-5p9h-95mh
+fix available via `npm audit fix`
+node_modules/http-proxy-middleware
+  @angular-devkit/build-angular  <=18.2.19 || 19.0.0-next.0 - 19.2.14 || 20.0.0-next.0 - 20.0.0-rc.4
+  Depends on vulnerable versions of @angular/build
+  Depends on vulnerable versions of http-proxy-middleware
+  Depends on vulnerable versions of webpack-dev-server
+  node_modules/@angular-devkit/build-angular
+
+vite  6.2.0 - 6.2.6
+Severity: moderate
+Vite has an `server.fs.deny` bypass with an invalid `request-target` - https://github.com/advisories/GHSA-356w-63v5-8wf4
+Vite's server.fs.deny bypassed with /. for files under project root - https://github.com/advisories/GHSA-859w-5945-r5v3
+fix available via `npm audit fix`
+node_modules/@angular/build/node_modules/vite
+  @angular/build  19.2.1 - 19.2.7 || 20.0.0-next.0 - 20.0.0-rc.4
+  Depends on vulnerable versions of vite
+  node_modules/@angular/build
+
+webpack-dev-server  <=5.2.0
+Severity: moderate
+webpack-dev-server users' source code may be stolen when they access a malicious web site with non-Chromium based browser - https://github.com/advisories/GHSA-9jgg-88mc-972h
+webpack-dev-server users' source code may be stolen when they access a malicious web site - https://github.com/advisories/GHSA-4v9v-hfq4-rm2v
+fix available via `npm audit fix`
+node_modules/webpack-dev-server
+
+5 moderate severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
