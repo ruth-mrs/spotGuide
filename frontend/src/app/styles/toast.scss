@@ -105,20 +105,22 @@
 
 // Success Toast - Verde profesional
 .toast-success {
-  --toast-text-color: #166534;
+  --toast-text-color: #86efac;
   --toast-icon-bg: linear-gradient(135deg, #22c55e, #16a34a);
   --toast-icon-color: #ffffff;
   --toast-icon-shadow: rgba(34, 197, 94, 0.3);
   --toast-shadow-primary: rgba(34, 197, 94, 0.15);
-  --background: linear-gradient(135deg, rgba(240, 253, 244, 0.95) 0%, rgba(220, 252, 231, 0.92) 100%) !important;
+  --background: linear-gradient(135deg, rgba(20, 83, 45, 0.9) 0%, rgba(22, 101, 52, 0.85) 100%) !important;
   
   .toast-wrapper {
     background: linear-gradient(
       135deg,
-      rgba(240, 253, 244, 0.95) 0%,
-      rgba(220, 252, 231, 0.92) 100%
+      rgba(20, 83, 45, 0.9) 0%,
+      rgba(22, 101, 52, 0.85) 100%
     ) !important;
-    border-color: rgba(34, 197, 94, 0.12) !important;
+    border-color: rgba(34, 197, 94, 0.2) !important;
+    animation: toastFadeSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+               errorShake 0.3s ease-in-out 0.5s !important;
   }
   
   .toast-container {
@@ -128,24 +130,25 @@
   .toast-message {
     color: var(--toast-text-color) !important;
   }
-}
+} 
+
 
 // Error Toast - Rojo profesional
 .toast-error {
-  --toast-text-color: #991b1b;
+  --toast-text-color: #fca5a5;
   --toast-icon-bg: linear-gradient(135deg, #ef4444, #dc2626);
   --toast-icon-color: #ffffff;
   --toast-icon-shadow: rgba(239, 68, 68, 0.3);
   --toast-shadow-primary: rgba(239, 68, 68, 0.15);
-  --background: linear-gradient(135deg, rgba(254, 242, 242, 0.95) 0%, rgba(252, 226, 226, 0.92) 100%) !important;
+  --background: linear-gradient(135deg, rgba(127, 29, 29, 0.9) 0%, rgba(153, 27, 27, 0.85) 100%) !important;
   
   .toast-wrapper {
     background: linear-gradient(
       135deg,
-      rgba(254, 242, 242, 0.95) 0%,
-      rgba(252, 226, 226, 0.92) 100%
+      rgba(127, 29, 29, 0.9) 0%,
+      rgba(153, 27, 27, 0.85) 100%
     ) !important;
-    border-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
     animation: toastFadeSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
                errorShake 0.3s ease-in-out 0.5s !important;
   }
@@ -161,20 +164,20 @@
 
 // Warning Toast - Ámbar profesional
 .toast-warning {
-  --toast-text-color: #92400e;
+  --toast-text-color: #fcd34d;
   --toast-icon-bg: linear-gradient(135deg, #f59e0b, #d97706);
   --toast-icon-color: #ffffff;
   --toast-icon-shadow: rgba(245, 158, 11, 0.3);
   --toast-shadow-primary: rgba(245, 158, 11, 0.15);
-  --background: linear-gradient(135deg, rgba(255, 251, 235, 0.95) 0%, rgba(254, 243, 199, 0.92) 100%) !important;
+  --background: linear-gradient(135deg, rgba(120, 53, 15, 0.9) 0%, rgba(146, 64, 14, 0.85) 100%) !important;
   
   .toast-wrapper {
     background: linear-gradient(
       135deg,
-      rgba(255, 251, 235, 0.95) 0%,
-      rgba(254, 243, 199, 0.92) 100%
+      rgba(120, 53, 15, 0.9) 0%,
+      rgba(146, 64, 14, 0.85) 100%
     ) !important;
-    border-color: rgba(245, 158, 11, 0.12) !important;
+    border-color: rgba(245, 158, 11, 0.2) !important;
   }
   
   .toast-container {
@@ -188,20 +191,20 @@
 
 // Info Toast - Azul profesional
 .toast-info {
-  --toast-text-color: #1e40af;
+  --toast-text-color: #93c5fd;
   --toast-icon-bg: linear-gradient(135deg, #3b82f6, #2563eb);
   --toast-icon-color: #ffffff;
   --toast-icon-shadow: rgba(59, 130, 246, 0.3);
   --toast-shadow-primary: rgba(59, 130, 246, 0.15);
-  --background: linear-gradient(135deg, rgba(239, 246, 255, 0.95) 0%, rgba(219, 234, 254, 0.92) 100%) !important;
+  --background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(37, 99, 235, 0.85) 100%) !important;
   
   .toast-wrapper {
     background: linear-gradient(
       135deg,
-      rgba(239, 246, 255, 0.95) 0%,
-      rgba(219, 234, 254, 0.92) 100%
+      rgba(30, 58, 138, 0.9) 0%,
+      rgba(37, 99, 235, 0.85) 100%
     ) !important;
-    border-color: rgba(59, 130, 246, 0.12) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
   }
   
   .toast-container {
@@ -215,20 +218,20 @@
 
 // Loading Toast - Índigo profesional
 .toast-loading {
-  --toast-text-color: #4338ca;
+  --toast-text-color: #c4b5fd;
   --toast-icon-bg: linear-gradient(135deg, #6366f1, #4f46e5);
   --toast-icon-color: #ffffff;
   --toast-icon-shadow: rgba(99, 102, 241, 0.3);
   --toast-shadow-primary: rgba(99, 102, 241, 0.15);
-  --background: linear-gradient(135deg, rgba(245, 243, 255, 0.95) 0%, rgba(237, 233, 254, 0.92) 100%) !important;
+  --background: linear-gradient(135deg, rgba(67, 56, 202, 0.9) 0%, rgba(79, 70, 229, 0.85) 100%) !important;
   
   .toast-wrapper {
     background: linear-gradient(
       135deg,
-      rgba(245, 243, 255, 0.95) 0%,
-      rgba(237, 233, 254, 0.92) 100%
+      rgba(67, 56, 202, 0.9) 0%,
+      rgba(79, 70, 229, 0.85) 100%
     ) !important;
-    border-color: rgba(99, 102, 241, 0.12) !important;
+    border-color: rgba(99, 102, 241, 0.2) !important;
   }
   
   .toast-container {
@@ -314,78 +317,6 @@
 
 // Modo oscuro elegante
 @media (prefers-color-scheme: dark) {
-  .toast-success {
-    --toast-text-color: #86efac;
-    --background: linear-gradient(135deg, rgba(20, 83, 45, 0.9) 0%, rgba(22, 101, 52, 0.85) 100%) !important;
-    
-    .toast-wrapper {
-      background: linear-gradient(
-        135deg,
-        rgba(20, 83, 45, 0.9) 0%,
-        rgba(22, 101, 52, 0.85) 100%
-      ) !important;
-      border-color: rgba(34, 197, 94, 0.2) !important;
-    }
-  }
-  
-  .toast-error {
-    --toast-text-color: #fca5a5;
-    --background: linear-gradient(135deg, rgba(127, 29, 29, 0.9) 0%, rgba(153, 27, 27, 0.85) 100%) !important;
-    
-    .toast-wrapper {
-      background: linear-gradient(
-        135deg,
-        rgba(127, 29, 29, 0.9) 0%,
-        rgba(153, 27, 27, 0.85) 100%
-      ) !important;
-      border-color: rgba(239, 68, 68, 0.2) !important;
-    }
-  }
-  
-  .toast-warning {
-    --toast-text-color: #fcd34d;
-    --background: linear-gradient(135deg, rgba(120, 53, 15, 0.9) 0%, rgba(146, 64, 14, 0.85) 100%) !important;
-    
-    .toast-wrapper {
-      background: linear-gradient(
-        135deg,
-        rgba(120, 53, 15, 0.9) 0%,
-        rgba(146, 64, 14, 0.85) 100%
-      ) !important;
-      border-color: rgba(245, 158, 11, 0.2) !important;
-    }
-  }
-  
-  .toast-info {
-    --toast-text-color: #93c5fd;
-    --background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(37, 99, 235, 0.85) 100%) !important;
-    
-    .toast-wrapper {
-      background: linear-gradient(
-        135deg,
-        rgba(30, 58, 138, 0.9) 0%,
-        rgba(37, 99, 235, 0.85) 100%
-      ) !important;
-      border-color: rgba(59, 130, 246, 0.2) !important;
-    }
-  }
-  
-  .toast-loading {
-    --toast-text-color: #c4b5fd;
-    --background: linear-gradient(135deg, rgba(67, 56, 202, 0.9) 0%, rgba(79, 70, 229, 0.85) 100%) !important;
-    
-    .toast-wrapper {
-      background: linear-gradient(
-        135deg,
-        rgba(67, 56, 202, 0.9) 0%,
-        rgba(79, 70, 229, 0.85) 100%
-      ) !important;
-      border-color: rgba(99, 102, 241, 0.2) !important;
-    }
-  }
-}
-
-// Efectos hover sutiles
 .modern-toast:hover {
   .toast-wrapper {
     transform: translateY(-2px) !important;
@@ -402,7 +333,7 @@
       0 6px 16px var(--toast-icon-shadow),
       inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
   }
-}
+}}
 
 // Transición de salida
 .modern-toast.toast-leaving {
@@ -417,4 +348,4 @@
     transform: translateY(-20px) scale(0.95);
     filter: blur(1px);
   }
-}
+  }

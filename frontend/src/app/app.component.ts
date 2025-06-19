@@ -183,8 +183,7 @@ export class AppComponent implements OnInit {
   }
 
   private broadcastSearchToProfile(query: string) {
-    // Usar un servicio compartido o EventEmitter
-    this.searchService.setProfileSearchQuery(query);
+
   }
 
   // Método que realiza la búsqueda usando FoursquareService y datos locales
