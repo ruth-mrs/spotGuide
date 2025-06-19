@@ -8,16 +8,15 @@ on:
       - 'frontend/**'
       - '.github/workflows/gcp.yml'
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
-    env:
+env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       REGION: us
       REPOSITORY: default 
       REGISTRY: ${{ env.REGION }}-docker.pkg.dev
-
+      
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
