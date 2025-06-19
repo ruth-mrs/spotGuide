@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface MapMarker {
   id: string;
@@ -65,7 +66,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   html: `
     <div class="custom-marker custom-poi">
       <div class="marker-pin">
-        <div class="marker-icon">⭐</div>
+        <div class="marker-icon">💜</div>
       </div>
     </div>
   `,
@@ -78,7 +79,7 @@ private selectedCustomIcon = L.divIcon({
   html: `
     <div class="custom-marker custom-poi selected">
       <div class="marker-pin">
-        <div class="marker-icon">⭐</div>
+        <div class="marker-icon">💜</div>
       </div>
       <div class="marker-pulse"></div>
     </div>
@@ -88,25 +89,32 @@ private selectedCustomIcon = L.divIcon({
   iconAnchor: [15, 30]
 });
 
-  ngOnInit() {
-    // Configurar iconos por defecto de Leaflet
+  async ngOnInit() {
     this.fixLeafletIcons();
+
+    try {
+      const position = await Geolocation.getCurrentPosition();
+      this.center = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      console.log('Ubicación actual obtenida:', this.center);
+    } catch (error) {
+      console.warn('No se pudo obtener la ubicación actual, usando centro por defecto.', error);
+    }
   }
 
   ngAfterViewInit() {
-  // Pequeño delay para asegurar que el DOM esté listo
-  setTimeout(() => {
-    this.initializeMap();
-    
-    // Si ya tenemos marcadores, añadirlos
-    if (this.markers.length > 0) {
-      console.log('MapComponent: Añadiendo marcadores después de inicializar');
-      setTimeout(() => {
-        this.updateMarkers(this.markers);
-      }, 500);
-    }
-  }, 200);
-}
+    setTimeout(() => {
+      this.initializeMap();
+      if (this.markers.length > 0) {
+        console.log('MapComponent: Añadiendo marcadores después de inicializar');
+        setTimeout(() => {
+          this.updateMarkers(this.markers);
+        }, 500);
+      }
+    }, 200);
+  }
 
   ngOnDestroy() {
     if (this.map) {
@@ -115,7 +123,6 @@ private selectedCustomIcon = L.divIcon({
   }
 
   private fixLeafletIcons() {
-    // Fix para los iconos por defecto de Leaflet en Angular
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'assets/leaflet/marker-icon-2x.png',

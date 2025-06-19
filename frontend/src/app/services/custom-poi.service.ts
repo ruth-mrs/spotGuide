@@ -5,6 +5,8 @@ import { AuthService } from './auth.service';
 import { catchError, map } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface CustomPOI {
   id: string;
@@ -278,62 +280,40 @@ export class CustomPoiService {
     });
   }
 
-  // Obtener posición actual
   async getCurrentPosition(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocalización no soportada'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          });
-        },
-        (error) => {
-          reject(new Error(`Error obteniendo ubicación: ${error.message}`));
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
-    });
-  }
-
-  // Tomar foto
-  async takePicture(): Promise<string> {
-    // Esta es una implementación simple. En una app real usarías Capacitor Camera
-    return new Promise((resolve, reject) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.capture = 'environment';
-      
-      input.onchange = (event) => {
-        const file = (event.target as HTMLInputElement).files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            resolve(reader.result as string);
-          };
-          reader.onerror = () => {
-            reject(new Error('Error leyendo la imagen'));
-          };
-          reader.readAsDataURL(file);
-        } else {
-          reject(new Error('No se seleccionó ninguna imagen'));
-        }
+    try {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      });
+      return {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
       };
-      
-      input.click();
-    });
+    } catch (error: any) {
+      throw new Error(`Error obteniendo ubicación: ${error.message || error}`);
+    }
   }
+
+  async takePicture(): Promise<string> {
+  try {
+    const image = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.DataUrl,
+      source: CameraSource.Camera // Usa la cámara directamente
+    });
+    if (image && image.dataUrl) {
+      return image.dataUrl;
+    } else {
+      throw new Error('No se pudo obtener la imagen de la cámara');
+    }
+  } catch (error: any) {
+    throw new Error('Error al tomar la foto: ' + (error.message || error));
+  }
+}
 
   // Validar URL de imagen
   isValidImageUrl(url: string): boolean {

@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
   IonContent, IonButton, IonItem, IonLabel, IonCheckbox, IonCard, 
-  IonCardContent, IonCardHeader, IonCardTitle, IonSpinner, IonText, 
-  IonIcon, IonFab, IonFabButton, IonList, IonInput, IonTextarea, 
+  IonCardContent, IonCardHeader, IonCardTitle, IonSpinner, 
+  IonIcon, IonList, IonInput, IonTextarea, 
   IonSelect, IonSelectOption, AlertController, IonSegment, 
   IonSegmentButton, IonChip, IonCardSubtitle
 } from '@ionic/angular/standalone';
@@ -30,8 +30,8 @@ import { ToastService } from '../../services/toast.service';
   standalone: true,
   imports: [
     IonContent, IonButton, IonItem, IonLabel, IonCheckbox, IonCard, 
-    IonCardContent, IonCardHeader, IonCardTitle, IonSpinner, IonText, 
-    IonIcon, IonFab, IonFabButton, IonList, IonInput, IonTextarea, 
+    IonCardContent, IonCardHeader, IonCardTitle, IonSpinner,
+    IonIcon, IonList, IonInput, IonTextarea, 
     IonSelect, IonSelectOption, IonSegment, IonSegmentButton, 
     IonChip, IonCardSubtitle,
     CommonModule, FormsModule, MapComponent

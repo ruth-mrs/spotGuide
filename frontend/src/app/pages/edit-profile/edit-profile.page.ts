@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
   IonContent, IonButton, IonSpinner,
-  AlertController, IonIcon } from '@ionic/angular/standalone';
+  AlertController } from '@ionic/angular/standalone';
 
 import { CustomInputComponent } from '../../components/custom-input/custom-input.component';
 import { AvatarUploadComponent } from '../../components/avatar-upload/avatar-upload.component';
@@ -30,7 +30,7 @@ interface FieldErrors {
   styleUrls: ['./edit-profile.page.scss'],
   standalone: true,
   imports: [ 
-    IonContent, IonButton, IonSpinner, IonIcon,
+    IonContent, IonButton, IonSpinner, 
     CommonModule, FormsModule,
     CustomInputComponent, AvatarUploadComponent
   ]

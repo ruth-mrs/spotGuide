@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   IonContent, IonAvatar, IonButton, IonIcon, IonSpinner,
-  IonCard, IonCardContent, IonCardHeader, IonCardTitle,
   IonFab, IonFabButton, IonItemOptions, IonItem, IonItemSliding,
   IonRefresher, IonRefresherContent, IonSegment, IonSegmentButton,
   IonLabel, IonList, IonItemOption, IonChip } from '@ionic/angular/standalone';
@@ -13,10 +12,11 @@ import { PoiCardComponent, POI } from '../../components/poi-card/poi-card.compon
 import { AuthService, User } from '../../services/auth.service';
 import { CustomPoiService, CustomPOI } from '../../services/custom-poi.service';
 import { FavoritesService, FavoritePoi } from '../../services/favorites.service';
-import { CommentsService } from '../../services/comments.service';
 import { HttpService } from '../../services/http.service';
 import { ToastService } from '../../services/toast.service';
 import { SearchService } from '../../services/search.service';
+import { addIcons } from 'ionicons';
+import { add, create, bookmark, grid, list, trash, heart } from 'ionicons/icons';
 
 // Interface local para POIs guardados compatible
 interface SavedPoi extends FavoritePoi {
@@ -72,6 +72,26 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.loadUserData();
     this.applyFilters();
     this.subscribeToProfileSearch();
+
+    this.subscription.add(
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd && event.urlAfterRedirects === '/profile') {
+        this.loadPublishedPois();
+        this.loadSavedPois();
+        this.loadUserStats();
+      }
+    })
+  );
+
+    addIcons({
+      add: add,
+      create: create,
+      bookmark: bookmark,
+      grid: grid,
+      list: list,
+      trash: trash,
+      heart: heart
+    });
   }
 
   ngOnDestroy() {
@@ -203,7 +223,9 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
  onEditProfile() {
-  this.router.navigate(['/edit-profile']);
+  this.router.navigate(['/edit-profile']).then(() => {
+    window.location.reload();
+  });
 }
 
   // POI click handlers
@@ -387,13 +409,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   private subscribeToProfileSearch() {
-    this.subscription.add(
-      this.searchService.profileSearch$.subscribe(query => {
-        if (query !== this.searchQuery) { // Evitar loops infinitos
-          this.onSearchFromToolbar(query);
-        }
-      })
-    );
+
   }
 
   onEmptyStateAction() {
