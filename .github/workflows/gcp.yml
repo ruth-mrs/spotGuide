@@ -12,8 +12,6 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us
   REPOSITORY: default 
-  # NO puedes hacer interpolación aquí: 
-  # REGISTRY: ${{ env.REGION }}-docker.pkg.dev  # esto falla
 
 jobs:
   build-and-push:
@@ -32,18 +30,18 @@ jobs:
       - name: Set up Docker authentication
         run: |
           REGISTRY="${{ env.REGION }}-docker.pkg.dev"
-          gcloud auth configure-docker $REGISTRY
+          gcloud auth configure-docker us-docker.pkg.dev
 
       - name: Build and push backend image
         run: |
           REGISTRY="${{ env.REGION }}-docker.pkg.dev"
-          IMAGE="$REGISTRY/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:0.1"
+          IMAGE="us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:0.1"
           docker build -t $IMAGE ./backend
           docker push $IMAGE
 
       - name: Build and push frontend image
         run: |
           REGISTRY="${{ env.REGION }}-docker.pkg.dev"
-          IMAGE="$REGISTRY/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:0.1"
+          IMAGE="us-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:0.1"
           docker build -t $IMAGE ./frontend
           docker push $IMAGE
